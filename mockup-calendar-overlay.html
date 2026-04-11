@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gr33t — Calendrier Overlay Outlook (données réelles)</title>
+<style>
+  :root {
+    --colorBrandBackground: #0F6CBD;
+    --colorBrandBackground2: #EBF3FC;
+    --colorNeutralForeground1: #242424;
+    --colorNeutralForeground2: #424242;
+    --colorNeutralForeground3: #616161;
+    --colorNeutralForegroundDisabled: #BDBDBD;
+    --colorNeutralBackground1: #FFFFFF;
+    --colorNeutralBackground2: #FAFAFA;
+    --colorNeutralBackground3: #F5F5F5;
+    --colorNeutralStroke1: #D1D1D1;
+    --colorNeutralStroke2: #E0E0E0;
+    --colorNeutralStroke3: #F0F0F0;
+    --colorStatusSuccessForeground1: #107C10;
+    --colorStatusWarningForeground1: #BC4B09;
+    --colorStatusDangerForeground1: #B10E1C;
+    --gr33t-green: #4CAE4F;
+    --gr33t-green-light: #E8F5E9;
+    --gr33t-green-bg: rgba(76,174,79,0.07);
+    --gr33t-warn: #F59E0B;
+    --gr33t-warn-light: #FFF8E1;
+    --gr33t-bad: #EF4444;
+    --gr33t-bad-light: #FEF2F2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    font-size: 14px;
+    color: var(--colorNeutralForeground1);
+    background: var(--colorNeutralBackground3);
+    height: 100vh; overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { height: 100vh; display: flex; flex-direction: column; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(90deg, rgba(17,94,163,0.85), rgba(15,108,189,0.75)),
+      url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=2000&q=60');
+    background-size: cover; background-position: center;
+    height: 48px; display: flex; align-items: center; padding: 0 12px; gap: 16px; flex-shrink: 0;
+  }
+  .header-logo { color: white; font-weight: 600; font-size: 16px; padding-left: 40px; }
+  .header-search { flex: 1; max-width: 560px; margin: 0 auto; background: rgba(255,255,255,0.95); border-radius: 4px; padding: 6px 12px; color: var(--colorNeutralForeground3); font-size: 13px; }
+  .header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; color: white; font-size: 13px; }
+  .header-avatar { width: 32px; height: 32px; border-radius: 50%; background: #8E8CD8; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+  /* TABS */
+  .tabs { background: white; border-bottom: 1px solid var(--colorNeutralStroke2); display: flex; align-items: center; padding: 0 12px; height: 38px; flex-shrink: 0; }
+  .tab { padding: 8px 14px; font-size: 14px; cursor: pointer; position: relative; }
+  .tab.active { font-weight: 600; color: var(--colorBrandBackground); }
+  .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 14px; right: 14px; height: 2px; background: var(--colorBrandBackground); border-radius: 1px; }
+
+  /* RIBBON */
+  .ribbon { background: white; border-bottom: 1px solid var(--colorNeutralStroke2); padding: 6px 12px; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .rb { padding: 6px 12px; border-radius: 4px; border: none; background: transparent; font-size: 13px; cursor: pointer; color: var(--colorNeutralForeground1); display: flex; align-items: center; gap: 6px; height: 32px; }
+  .rb:hover { background: var(--colorNeutralBackground3); }
+  .rb.active { background: var(--colorNeutralBackground3); font-weight: 600; }
+  .rb.primary { background: var(--colorBrandBackground); color: white; font-weight: 600; }
+  .rb-sep { width: 1px; height: 22px; background: var(--colorNeutralStroke2); margin: 0 4px; }
+
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 230px; background: var(--colorNeutralBackground2); border-right: 1px solid var(--colorNeutralStroke2); padding: 12px; font-size: 12px; flex-shrink: 0; overflow-y: auto; }
+  .sidebar-nav-label { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .mini-cal { display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; text-align: center; font-size: 10px; margin-bottom: 14px; }
+  .mini-cal .hd { color: var(--colorNeutralForeground3); font-weight: 600; padding: 4px 0; }
+  .mini-cal .d { padding: 4px 0; border-radius: 50%; cursor: pointer; }
+  .mini-cal .d:hover { background: var(--colorNeutralStroke3); }
+  .mini-cal .d.today { background: var(--colorBrandBackground); color: white; font-weight: 600; }
+  .mini-cal .d.week { background: var(--colorBrandBackground2); }
+  .sidebar-section { margin-top: 14px; }
+  .sidebar-section-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .sidebar-section-title::before { content: '▾'; font-size: 10px; color: var(--colorNeutralForeground3); }
+  .cal-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; cursor: pointer; }
+  .cal-item input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; }
+  .cal-item.gr33t input[type="checkbox"] { accent-color: var(--gr33t-green); }
+  .cal-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .sidebar-link { color: var(--colorBrandBackground); font-size: 12px; cursor: pointer; padding: 4px 0; }
+
+  /* Légende retirée — non injectable dans la sidebar Outlook */
+
+  /* CALENDAR */
+  .cal-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: white; }
+  .week-nav { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--colorNeutralStroke2); font-size: 13px; }
+  .week-nav-btn { padding: 6px 14px; border: 1px solid var(--colorNeutralStroke1); border-radius: 4px; background: white; cursor: pointer; font-size: 13px; }
+  .week-nav-arrows { display: flex; gap: 2px; }
+  .week-nav-arrows button { border: none; background: transparent; cursor: pointer; font-size: 16px; color: var(--colorNeutralForeground2); padding: 4px 8px; border-radius: 4px; }
+  .week-nav-title { font-size: 18px; font-weight: 600; }
+
+  .cal-header { display: flex; border-bottom: 1px solid var(--colorNeutralStroke2); flex-shrink: 0; }
+  .cal-header .gutter { width: 56px; min-width: 56px; }
+  .day-hdr { flex: 1; text-align: center; padding: 8px 4px; border-left: 1px solid var(--colorNeutralStroke3); }
+  .day-hdr .dnum { font-size: 20px; font-weight: 600; color: var(--colorBrandBackground); }
+  .day-hdr .dname { font-size: 11px; color: var(--colorNeutralForeground3); }
+  .day-hdr.today .dnum { background: var(--colorBrandBackground); color: white; border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; }
+
+  /* All-day / score area */
+  .allday-area { display: flex; border-bottom: 1px solid var(--colorNeutralStroke2); min-height: 30px; flex-shrink: 0; }
+  .allday-gutter { width: 56px; min-width: 56px; border-right: 1px solid var(--colorNeutralStroke3); display: flex; align-items: center; justify-content: center; }
+  .allday-gutter-label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 8px; font-weight: 700; letter-spacing: 1px; color: var(--gr33t-green); text-transform: uppercase; }
+  .allday-col { flex: 1; border-right: 1px solid var(--colorNeutralStroke3); padding: 3px 4px; }
+  .allday-col:last-child { border-right: none; }
+
+  /* ===== OUTLOOK "FREE" EVENT STYLE =====
+     Simulates showAs:"free" rendering in New Outlook:
+     - Very light background (category color at ~10% opacity)
+     - Thin left border in category color
+     - No solid fill, no dark edge
+     - Visually distinct from "busy" events (user's real meetings)
+  */
+
+  /* Score bar (all-day event in Gr33t calendar — lightGreen)
+     All events from the same calendar have the SAME color in Outlook.
+     showAs:"free" renders as a lighter version of the calendar color. */
+  .score-bar {
+    border-radius: 3px;
+    padding: 2px 8px;
+    font-size: 11px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer; line-height: 18px;
+    position: relative;
+    /* Outlook lightGreen calendar, showAs:free rendering */
+    background: rgba(76,174,79,0.12);
+    border-left: 3px solid var(--gr33t-green);
+    color: #2d7a30;
+  }
+  .allday-col { position: relative; }
+
+  /* Popover — simulates Outlook native event form */
+  .popover-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 90; }
+  .popover {
+    position: absolute; top: 28px; left: -20px; right: -20px;
+    z-index: 100;
+    background: white;
+    border: 1px solid var(--colorNeutralStroke1);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    font-size: 13px;
+    max-height: 440px;
+    overflow-y: auto;
+    min-width: 300px;
+    cursor: default;
+  }
+  /* Outlook event form header */
+  .popover-ol-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+    background: var(--colorNeutralBackground2);
+    border-radius: 8px 8px 0 0;
+  }
+  .popover-ol-title {
+    font-size: 14px; font-weight: 600; color: var(--colorNeutralForeground1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .popover-ol-title .cal-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gr33t-green); flex-shrink: 0; }
+  .popover-ol-actions { display: flex; gap: 4px; }
+  .popover-ol-actions button {
+    border: none; background: transparent; color: var(--colorNeutralForeground3);
+    padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  }
+  .popover-ol-actions button:hover { background: var(--colorNeutralStroke3); }
+  .popover-ol-meta {
+    padding: 8px 14px;
+    font-size: 12px; color: var(--colorNeutralForeground3);
+    border-bottom: 1px solid var(--colorNeutralStroke3);
+    display: flex; align-items: center; gap: 6px;
+  }
+  /* Event body (HTML content — this is what we control) */
+  .popover-body { padding: 14px; }
+  .popover-score { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--colorNeutralStroke3); }
+  .popover-score-pct { font-size: 24px; font-weight: 700; line-height: 1; color: #2d7a30; }
+  .popover-score-label { font-size: 13px; color: var(--colorNeutralForeground2); line-height: 1.3; }
+  .popover-factor { padding: 6px 0; border-bottom: 1px solid var(--colorNeutralStroke3); }
+  .popover-factor:last-child { border-bottom: none; }
+  .popover-factor-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .popover-factor-name { font-weight: 600; font-size: 13px; }
+  .popover-factor-summary { font-weight: 700; font-size: 12px; }
+  .pf-good { color: var(--colorStatusSuccessForeground1); }
+  .pf-warn { color: var(--colorStatusWarningForeground1); }
+  .pf-bad { color: var(--colorStatusDangerForeground1); }
+  .pf-neutral { color: var(--colorBrandBackground); }
+  .popover-row { display: flex; justify-content: space-between; padding: 2px 0 2px 10px; font-size: 11px; color: var(--colorNeutralForeground3); }
+  .popover-row .val { font-weight: 500; flex-shrink: 0; margin-left: 8px; }
+  .popover-row .val.ok { color: var(--colorStatusSuccessForeground1); }
+  .popover-row .val.ko { color: var(--colorStatusDangerForeground1); }
+  .popover-row .val.alert { color: var(--colorStatusWarningForeground1); }
+  .popover-footer { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--colorNeutralStroke3); font-size: 10px; color: var(--colorNeutralForeground3); font-style: italic; text-align: center; }
+  .score-bar .sf { display: none; }
+  .score-bar .st { position: relative; z-index: 1; }
+  /* All score bars same green (single calendar color) */
+  .score-bar.good, .score-bar.warn, .score-bar.bad { }
+  .score-bar.future { opacity: 0.4; }
+
+  /* Grid */
+  .cal-grid-wrap { flex: 1; overflow-y: auto; }
+  .cal-grid { display: flex; position: relative; }
+  .time-col { width: 56px; min-width: 56px; flex-shrink: 0; }
+  .time-label { height: 52px; text-align: right; padding-right: 8px; font-size: 11px; color: var(--colorNeutralForeground3); border-bottom: 1px solid var(--colorNeutralStroke3); }
+  .day-col { flex: 1; position: relative; border-left: 1px solid var(--colorNeutralStroke3); }
+  .hour-line { height: 52px; border-bottom: 1px solid var(--colorNeutralStroke3); }
+
+  /* Real user events (showAs: busy — solid fill, dark left edge) */
+  .ev { position: absolute; left: 3px; right: 3px; border-radius: 3px; padding: 2px 6px; font-size: 10px; overflow: hidden; cursor: pointer; z-index: 5; border-left: 4px solid; box-shadow: 0 0 1px rgba(0,0,0,0.1); line-height: 1.3; }
+  .ev:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.15); z-index: 15; }
+  .ev-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ev-time { font-size: 9px; opacity: 0.7; }
+  .ev-blue { background: #DFF6FE; border-color: #0078D4; color: #004578; }
+  .ev-purple { background: #EFDFF4; border-color: #881798; color: #4B0866; }
+  .ev-teal { background: #DFF6DD; border-color: #107C10; color: #0B5A08; }
+  .ev-orange { background: #FFF4CE; border-color: #CA5010; color: #8A3707; }
+
+  /* GR33T OVERLAY */
+  .gr33t-overlay { transition: opacity 0.3s; }
+  .gr33t-off .gr33t-overlay { opacity: 0 !important; pointer-events: none !important; }
+
+  /* Badges multi-tâche et lignes back-to-back : NON RÉALISABLES
+     avec un calendrier overlay. Retirés de la maquette.
+     Nécessiteraient une WebExtension Chrome/Edge pour modifier le DOM. */
+
+  /* Focus blocks */
+  /* Focus blocks — showAs:"tentative" = hatched left edge + light background */
+  .focus {
+    position: absolute; left: 3px; right: 3px;
+    border-radius: 3px;
+    background: rgba(76,174,79,0.04);
+    border-left: none;
+    z-index: 1;
+    padding: 2px 6px 2px 11px;
+    font-size: 9px; font-weight: 600;
+    color: #2d7a30;
+    overflow: hidden;
+  }
+  .focus::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: repeating-linear-gradient(
+      -55deg,
+      var(--gr33t-green),
+      var(--gr33t-green) 2px,
+      white 2px,
+      white 5px
+    );
+    border-radius: 3px 0 0 3px;
+  }
+  .focus:hover { background: rgba(76,174,79,0.08); }
+  .focus-sub { font-weight: 400; opacity: 0.7; font-size: 8px; }
+
+  /* Overtime — showAs:"oof" = purple left edge + purple tint (Outlook native) */
+  .overtime {
+    position: absolute; left: 3px; right: 3px;
+    border-radius: 3px;
+    background: rgba(134,97,193,0.08);
+    border-left: 4px solid #8661C1;
+    z-index: 2;
+    padding: 2px 6px;
+    font-size: 9px; font-weight: 600;
+    color: #6B4FA0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="header-logo">Outlook</div>
+    <div class="header-search">🔍 Rechercher</div>
+    <div class="header-right"><span>Arnaud Rayrole (G...</span><div class="header-avatar">AR</div></div>
+  </div>
+  <div class="tabs"><div class="tab">☰</div><div class="tab active">Accueil</div><div class="tab">Afficher</div><div class="tab">Aide</div></div>
+  <div class="ribbon">
+    <button class="rb primary">+ Nouvel événement ▾</button>
+    <button class="rb">📅 Jour ▾</button>
+    <button class="rb">📋 Semaine de travail</button>
+    <button class="rb active">▦ Semaine</button>
+    <button class="rb">🗓 Mois</button>
+    <div class="rb-sep"></div>
+    <button class="rb">⚏ Filtre appliqué ▾</button>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-nav-label">avril 2026</div>
+      <div class="mini-cal">
+        <div class="hd">L</div><div class="hd">M</div><div class="hd">M</div><div class="hd">J</div><div class="hd">V</div><div class="hd">S</div><div class="hd">D</div>
+        <div class="d">30</div><div class="d">31</div><div class="d">1</div><div class="d">2</div><div class="d">3</div><div class="d">4</div><div class="d">5</div>
+        <div class="d week">6</div><div class="d week">7</div><div class="d week">8</div><div class="d week">9</div><div class="d week today">10</div><div class="d">11</div><div class="d">12</div>
+        <div class="d">13</div><div class="d">14</div><div class="d">15</div><div class="d">16</div><div class="d">17</div><div class="d">18</div><div class="d">19</div>
+        <div class="d">20</div><div class="d">21</div><div class="d">22</div><div class="d">23</div><div class="d">24</div><div class="d">25</div><div class="d">26</div>
+        <div class="d">27</div><div class="d">28</div><div class="d">29</div><div class="d">30</div><div class="d">1</div><div class="d">2</div><div class="d">3</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Mes calendriers</div>
+        <label class="cal-item"><input type="checkbox" checked><span class="cal-swatch" style="background:var(--colorBrandBackground);"></span>Arnaud Rayrole</label>
+        <label class="cal-item" style="color:var(--colorNeutralForeground3);"><input type="checkbox"><span class="cal-swatch" style="background:#E8B84A;"></span>Anniversaires</label>
+        <label class="cal-item gr33t">
+          <input type="checkbox" id="gr33tToggle" checked onchange="toggleGr33t()">
+          <span class="cal-swatch" style="background:var(--gr33t-green);"></span>
+          <strong>Gr33t Recovery</strong>
+        </label>
+      </div>
+
+      <!-- Légende retirée : non injectable dans la sidebar Outlook -->
+    </div>
+
+    <div class="cal-view" id="calView">
+      <div class="week-nav">
+        <button class="week-nav-btn">📅 Aujourd'hui</button>
+        <div class="week-nav-arrows"><button>‹</button><button>›</button></div>
+        <div class="week-nav-title">06-10 avril 2026</div>
+      </div>
+
+      <div class="cal-header">
+        <div class="gutter"></div>
+        <div class="day-hdr"><div class="dnum">06</div><div class="dname">Lun</div></div>
+        <div class="day-hdr"><div class="dnum">07</div><div class="dname">Mar</div></div>
+        <div class="day-hdr"><div class="dnum">08</div><div class="dname">Mer</div></div>
+        <div class="day-hdr"><div class="dnum">09</div><div class="dname">Jeu</div></div>
+        <div class="day-hdr today"><div class="dnum">10</div><div class="dname">Ven</div></div>
+      </div>
+
+      <div class="allday-area">
+        <div class="allday-gutter"></div>
+        <div class="allday-col"><div class="score-bar good gr33t-overlay"><span class="sf" style="width:75%;"></span><span class="st">75% de suivi des facteurs de récupération</span></div></div>
+        <div class="allday-col"><div class="score-bar warn gr33t-overlay"><span class="sf" style="width:50%;"></span><span class="st">50%</span></div></div>
+        <div class="allday-col"><div class="score-bar warn gr33t-overlay"><span class="sf" style="width:55%;"></span><span class="st">55%</span></div></div>
+        <div class="allday-col"><div class="score-bar good gr33t-overlay"><span class="sf" style="width:75%;"></span><span class="st">75%</span></div></div>
+        <div class="allday-col"><div class="score-bar good gr33t-overlay"><span class="sf" style="width:75%;"></span><span class="st">Indice de récupération : 75 points</span></div></div>
+      </div>
+
+      <div class="cal-grid-wrap" id="gridWrap">
+        <div class="cal-grid" id="calGrid">
+          <div class="time-col" id="timeCol"></div>
+          <div class="day-col" id="col0"></div>
+          <div class="day-col" id="col1"></div>
+          <div class="day-col" id="col2"></div>
+          <div class="day-col" id="col3"></div>
+          <div class="day-col" id="col4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SH = 7, EH = 22, RH = 52;
+function hY(h) { return (h-SH)*RH; }
+function dH(a,b) { return hY(b)-hY(a); }
+function fH(h) { const hr=Math.floor(h),mn=Math.round((h-hr)*60); return hr+':'+(mn<10?'0':'')+mn; }
+
+function buildGrid() {
+  const tc = document.getElementById('timeCol');
+  for (let h=SH; h<EH; h++) { const d=document.createElement('div'); d.className='time-label'; d.textContent=h+':00'; tc.appendChild(d); }
+  for (let c=0; c<5; c++) { const col=document.getElementById('col'+c); for (let h=SH; h<EH; h++) { const d=document.createElement('div'); d.className='hour-line'; col.appendChild(d); } }
+  document.getElementById('gridWrap').scrollTop = hY(8)-10;
+}
+
+// ============================================================
+// REAL DATA from Gr33t GCal screenshots
+// ============================================================
+
+// mt: number of mails during meeting (null = not tracked by Gr33t, 0 = tracked + no mail)
+const events = [
+  // --- LUNDI 6 --- (Le lundi de Pâques)
+  { col:0, start:9, end:9.5, title:'Anglais', cls:'ev-blue', mt:null },
+  { col:0, start:10.5, end:11, title:'Admin & fin', cls:'ev-blue', mt:0 },
+  { col:0, start:17, end:17.75, title:'Lecko : Réunion de suivi', cls:'ev-blue', mt:0 },
+
+  // --- MARDI 7 ---
+  { col:1, start:9, end:9.5, title:'Khalid x Arnaud', cls:'ev-blue', mt:null },
+  { col:1, start:9.5, end:10, title:'Gr33Team', cls:'ev-teal', mt:0 },
+  { col:1, start:11, end:12, title:'#Gr33t - RDV Mensuel', cls:'ev-teal', mt:0 },
+  { col:1, start:18, end:18.5, title:'La Remote 2026', cls:'ev-orange', mt:null },
+  { col:1, start:20, end:21, title:'Figures of glass', cls:'ev-orange', mt:0 },
+
+  // --- MERCREDI 8 ---
+  { col:2, start:10, end:10.5, title:'test', cls:'ev-blue', mt:0 },
+  { col:2, start:10.5, end:11.25, title:'Co-Biz', cls:'ev-blue', mt:0 },
+  { col:2, start:11.25, end:11.5, title:'test', cls:'ev-blue', mt:0 },
+  { col:2, start:11.5, end:12, title:'Comop', cls:'ev-blue', mt:0 },
+  { col:2, start:16, end:18, title:'Recette Greet - Priorisation Sprint', cls:'ev-teal', mt:null },
+  { col:2, start:17.5, end:18, title:'Reda x Arnaud', cls:'ev-blue', mt:null },
+  { col:2, start:18.5, end:19.25, title:'Vincent x Arnaud', cls:'ev-blue', mt:0 },
+
+  // --- JEUDI 9 ---
+  { col:3, start:8, end:14, title:'Salon intranet', cls:'ev-blue', mt:null },
+  { col:3, start:14, end:16, title:'Sprint Review', cls:'ev-teal', mt:0 },
+  { col:3, start:16.33, end:16.75, title:'Echange (MOUHCINE ALMI)', cls:'ev-blue', mt:0 },
+  { col:3, start:17, end:18, title:'Programme Lecko IA Augmenté', cls:'ev-blue', mt:0 },
+
+  // --- VENDREDI 10 ---
+  { col:4, start:10.5, end:11.5, title:'MANCO - Soutenance Gr33t x Cognizant', cls:'ev-teal', mt:null },
+  { col:4, start:12, end:13, title:'Comop', cls:'ev-blue', mt:null },
+  { col:4, start:14, end:15, title:'Démo Gr33t', cls:'ev-teal', mt:null },
+];
+
+// Focus blocks (from Gr33t panels)
+const focusBlocks = [
+  // Lundi — 4 blocs, 9h45
+  { col:0, start:8, end:10.5, label:'2h30' },
+  { col:0, start:11, end:12.5, label:'1h30' },
+  { col:0, start:13.5, end:17, label:'3h30' },
+  { col:0, start:17.75, end:20, label:'2h15' },
+  // Mardi — 4 blocs, 9h30
+  { col:1, start:8, end:9.5, label:'1h30' },
+  { col:1, start:10, end:11, label:'1h' },
+  { col:1, start:12, end:12.5, label:'30min' },
+  { col:1, start:13.5, end:20, label:'6h30' },
+  // Mercredi — 4 blocs, 8h
+  { col:2, start:8, end:10, label:'2h' },
+  { col:2, start:12.25, end:12.5, label:'15min' },
+  { col:2, start:13.5, end:18.5, label:'5h' },
+  { col:2, start:19.25, end:20, label:'45min' },
+  // Jeudi — 6 blocs, 7h10
+  { col:3, start:8, end:9.5, label:'1h30' },
+  { col:3, start:9.92, end:12.5, label:'2h35' },
+  { col:3, start:13.5, end:14, label:'30min' },
+  { col:3, start:16, end:16.33, label:'20min' },
+  { col:3, start:16.75, end:17, label:'15min' },
+  { col:3, start:18, end:20, label:'2h' },
+];
+
+// Back-to-back transitions (ko)
+const backToBack = [
+  // Mercredi — jonctions entre les 4 réunions enchaînées
+  // test (10:00-10:30) → Co-Biz (10:30-11:15) → test (11:15-11:30) → Comop (11:30-12:00)
+  { col:2, y:10.5, label:'ko' },    // jonction test→Co-Biz à 10:30
+  { col:2, y:11.25, label:'ko' },   // jonction Co-Biz→test à 11:15
+  { col:2, y:11.5, label:'ko' },    // jonction test→Comop à 11:30
+];
+
+// Overtime (hors plage)
+const overtimeEvents = [
+  // Mardi — Figures of glass 20:00-21:00
+  { col:1, start:20, end:21, label:'🌙 Hors plage' },
+];
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderEvents() {
+  events.forEach(ev => {
+    const col = document.getElementById('col'+ev.col);
+    const div = document.createElement('div');
+    div.className = 'ev '+ev.cls;
+    const top = hY(ev.start), height = dH(ev.start, ev.end);
+    div.style.top = top+'px';
+    div.style.height = Math.max(height, 18)+'px';
+    let html = `<div class="ev-title">${ev.title}</div>`;
+    if (height > 28) html += `<div class="ev-time">${fH(ev.start)} – ${fH(ev.end)}</div>`;
+
+    // Badges multi-tâche retirés (non réalisable avec calendrier overlay)
+    div.innerHTML = html;
+    col.appendChild(div);
+  });
+}
+
+function renderOverlay() {
+  // Focus blocks
+  focusBlocks.forEach(b => {
+    const col = document.getElementById('col'+b.col);
+    const div = document.createElement('div');
+    div.className = 'focus gr33t-overlay';
+    const top = hY(b.start), height = dH(b.start, b.end);
+    div.style.top = top+'px'; div.style.height = height+'px';
+    div.innerHTML = height > 35
+      ? `🎯 Focus (${b.label})<div class="focus-sub">sans mail</div>`
+      : `🎯 ${b.label}`;
+    col.appendChild(div);
+  });
+
+  // Back-to-back retirés (non réalisable avec calendrier overlay)
+
+  // Overtime
+  overtimeEvents.forEach(ot => {
+    const col = document.getElementById('col'+ot.col);
+    const div = document.createElement('div');
+    div.className = 'overtime gr33t-overlay';
+    div.style.top = hY(ot.start)+'px'; div.style.height = dH(ot.start, ot.end)+'px';
+    div.textContent = ot.label;
+    col.appendChild(div);
+  });
+}
+
+function toggleGr33t() {
+  document.getElementById('calView').classList.toggle('gr33t-off', !document.getElementById('gr33tToggle').checked);
+}
+
+// ============================================================
+// POPOVER DATA (from Gr33t panels)
+// ============================================================
+const popoverData = [
+  // Lundi 6 — 75%
+  {
+    day: 'Lundi 6 avril', score: 75, cls: 'warn', label: 'Suivi modéré des facteurs de récupération',
+    factors: [
+      { name: 'Multi-tâche', summary: '0/2 réunions', cls: 'pf-good',
+        rows: [
+          { label: '10:30–11:00 Admin & fin', val: '0', vcls: 'ok' },
+          { label: '17:00–17:45 Lecko : Réunion de suivi', val: '0', vcls: 'ok' },
+        ]},
+      { name: 'Transitions', summary: '2/2 réunions', cls: 'pf-good',
+        rows: [
+          { label: '10:30–11:00 Admin & fin', val: 'ok', vcls: 'ok' },
+          { label: '17:00–17:45 Lecko : Réunion de suivi', val: 'ok', vcls: 'ok' },
+        ]},
+      { name: 'Débordement', summary: 'aucun débordement', cls: 'pf-good', rows: [] },
+      { name: 'Plage de travail profond disponible', summary: '4 blocs · 9h45', cls: 'pf-neutral',
+        rows: [
+          { label: '08:00–10:30 (150 min)', val: '✓', vcls: 'ok' },
+          { label: '11:00–12:30 (90 min)', val: '✓', vcls: 'ok' },
+          { label: '13:30–17:00 (210 min)', val: '✓', vcls: 'ok' },
+          { label: '17:45–20:00 (135 min)', val: '✓', vcls: 'ok' },
+        ]},
+    ]
+  },
+  // Mardi 7 — 50%
+  {
+    day: 'Mardi 7 avril', score: 50, cls: 'warn', label: 'Suivi modéré des facteurs de récupération',
+    factors: [
+      { name: 'Multi-tâche', summary: '0/3 réunions', cls: 'pf-good',
+        rows: [
+          { label: '09:30–10:00 Gr33Team', val: '0', vcls: 'ok' },
+          { label: '11:00–12:00 #Gr33t - RDV Mensuel', val: '0', vcls: 'ok' },
+          { label: '20:00–21:00 Figures of glass', val: '0', vcls: 'ok' },
+        ]},
+      { name: 'Transitions', summary: '3/3 réunions', cls: 'pf-good',
+        rows: [
+          { label: '09:30–10:00 Gr33Team', val: 'ok', vcls: 'ok' },
+          { label: '11:00–12:00 #Gr33t - RDV Mensuel', val: 'ok', vcls: 'ok' },
+          { label: '20:00–21:00 Figures of glass', val: 'ok', vcls: 'ok' },
+        ]},
+      { name: 'Débordement', summary: '1 réunion hors plage', cls: 'pf-bad',
+        rows: [
+          { label: '20:00–21:00 Figures of glass', val: '⚠', vcls: 'alert' },
+        ]},
+      { name: 'Plage de travail profond disponible', summary: '4 blocs · 9h30', cls: 'pf-neutral',
+        rows: [
+          { label: '08:00–09:30 (90 min)', val: '✓', vcls: 'ok' },
+          { label: '10:00–11:00 (60 min)', val: '✓', vcls: 'ok' },
+          { label: '12:00–12:30 (30 min)', val: '✓', vcls: 'ok' },
+          { label: '13:30–20:00 (390 min)', val: '✓', vcls: 'ok' },
+        ]},
+    ]
+  },
+  // Mercredi 8 — 55%
+  {
+    day: 'Mercredi 8 avril', score: 55, cls: 'warn', label: 'Suivi modéré des facteurs de récupération',
+    factors: [
+      { name: 'Multi-tâche', summary: '0/5 réunions', cls: 'pf-good',
+        rows: [
+          { label: '10:00–10:30 test', val: '0', vcls: 'ok' },
+          { label: '10:30–11:15 Co-Biz', val: '0', vcls: 'ok' },
+          { label: '11:15–11:30 test', val: '0', vcls: 'ok' },
+          { label: '11:30–12:15 Comop', val: '0', vcls: 'ok' },
+          { label: '18:30–19:15 Vincent x Arnaud', val: '0', vcls: 'ok' },
+        ]},
+      { name: 'Transitions', summary: '1/5 réunions', cls: 'pf-bad',
+        rows: [
+          { label: '10:00–10:30 test', val: 'ko', vcls: 'ko' },
+          { label: '10:30–11:15 Co-Biz', val: 'ko', vcls: 'ko' },
+          { label: '11:15–11:30 test', val: 'ko', vcls: 'ko' },
+          { label: '11:30–12:15 Comop', val: 'ko', vcls: 'ko' },
+          { label: '18:30–19:15 Vincent x Arnaud', val: 'ok', vcls: 'ok' },
+        ]},
+      { name: 'Débordement', summary: 'aucun débordement', cls: 'pf-good', rows: [] },
+      { name: 'Plage de travail profond disponible', summary: '4 blocs · 8h', cls: 'pf-neutral',
+        rows: [
+          { label: '08:00–10:00 (120 min)', val: '✓', vcls: 'ok' },
+          { label: '12:15–12:30 (15 min)', val: '✓', vcls: 'ok' },
+          { label: '13:30–18:30 (300 min)', val: '✓', vcls: 'ok' },
+          { label: '19:15–20:00 (45 min)', val: '✓', vcls: 'ok' },
+        ]},
+    ]
+  },
+  // Jeudi 9 — 75%
+  {
+    day: 'Jeudi 9 avril', score: 75, cls: 'good', label: 'Suivi modéré des facteurs de récupération',
+    factors: [
+      { name: 'Multi-tâche', summary: '0/4 réunions', cls: 'pf-good',
+        rows: [
+          { label: '09:30–09:55 point d\'échange', val: '0', vcls: 'ok' },
+          { label: '14:00–16:00 Sprint Review', val: '0', vcls: 'ok' },
+          { label: '16:20–16:45 Echange (MOUHCINE ALMI)', val: '0', vcls: 'ok' },
+          { label: '17:00–18:00 Programme Lecko IA Augmenté', val: '0', vcls: 'ok' },
+        ]},
+      { name: 'Transitions', summary: '4/4 réunions', cls: 'pf-good',
+        rows: [
+          { label: '09:30–09:55 point d\'échange', val: 'ok', vcls: 'ok' },
+          { label: '14:00–16:00 Sprint Review', val: 'ok', vcls: 'ok' },
+          { label: '16:20–16:45 Echange (MOUHCINE ALMI)', val: 'ok', vcls: 'ok' },
+          { label: '17:00–18:00 Programme Lecko IA Augmenté', val: 'ok', vcls: 'ok' },
+        ]},
+      { name: 'Débordement', summary: 'aucun débordement', cls: 'pf-good', rows: [] },
+      { name: 'Plage de travail profond disponible', summary: '6 blocs · 7h10', cls: 'pf-neutral',
+        rows: [
+          { label: '08:00–09:30 (90 min)', val: '✓', vcls: 'ok' },
+          { label: '09:55–12:30 (155 min)', val: '✓', vcls: 'ok' },
+          { label: '13:30–14:00 (30 min)', val: '✓', vcls: 'ok' },
+          { label: '16:00–16:20 (20 min)', val: '✓', vcls: 'ok' },
+          { label: '16:45–17:00 (15 min)', val: '✓', vcls: 'ok' },
+          { label: '18:00–20:00 (120 min)', val: '✓', vcls: 'ok' },
+        ]},
+    ]
+  },
+  null, // Vendredi — en cours
+];
+
+// ============================================================
+// POPOVER RENDERING
+// ============================================================
+let openPopoverIdx = -1;
+
+function openPopover(idx) {
+  closePopover();
+  if (!popoverData[idx]) return;
+  openPopoverIdx = idx;
+  const d = popoverData[idx];
+  const col = document.querySelectorAll('.allday-col')[idx];
+
+  // Backdrop
+  const backdrop = document.createElement('div');
+  backdrop.className = 'popover-backdrop';
+  backdrop.id = 'popover-backdrop';
+  backdrop.onclick = closePopover;
+  document.body.appendChild(backdrop);
+
+  // Popover
+  const pop = document.createElement('div');
+  pop.className = 'popover';
+  pop.id = 'popover';
+
+  // Outlook native event form header
+  let html = `<div class="popover-ol-header">
+    <div class="popover-ol-title"><span class="cal-dot"></span>⚡ ${d.score}% de suivi des facteurs de récupération</div>
+    <div class="popover-ol-actions"><button onclick="closePopover()">×</button></div>
+  </div>`;
+  html += `<div class="popover-ol-meta">📅 ${d.day} · Toute la journée · Gr33t Recovery</div>`;
+  // Body HTML (this is what we control via event.body.content)
+  html += `<div class="popover-body">`;
+  html += `<div class="popover-score"><div class="popover-score-pct">${d.score}%</div><div class="popover-score-label">${d.label}</div></div>`;
+
+  d.factors.forEach(f => {
+    html += `<div class="popover-factor"><div class="popover-factor-head"><div class="popover-factor-name">${f.name}</div><div class="popover-factor-summary ${f.cls}">${f.summary}</div></div>`;
+    f.rows.forEach(r => {
+      html += `<div class="popover-row"><span>${r.label}</span><span class="val ${r.vcls}">${r.val}</span></div>`;
+    });
+    html += `</div>`;
+  });
+
+  html += `<div class="popover-footer">Ces indicateurs sont définis dans le cadre de la politique QVCT de l'entreprise.</div>`;
+  html += `</div>`; // close popover-body
+  pop.innerHTML = html;
+  col.appendChild(pop);
+}
+
+function closePopover() {
+  const pop = document.getElementById('popover');
+  const bd = document.getElementById('popover-backdrop');
+  if (pop) pop.remove();
+  if (bd) bd.remove();
+  openPopoverIdx = -1;
+}
+
+// Attach click handlers to score bars
+function attachScoreBarClicks() {
+  document.querySelectorAll('.score-bar').forEach((bar, idx) => {
+    bar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (openPopoverIdx === idx) { closePopover(); }
+      else { openPopover(idx); }
+    });
+  });
+}
+
+buildGrid();
+renderEvents();
+renderOverlay();
+attachScoreBarClicks();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gr33t Layer — Intégration Outlook</title>
+<style>
+  :root {
+    --gr-blue: #4387F4;
+    --gr-blue-light: #e8f0fe;
+    --gr-blue-dark: #2a6ad4;
+    --gr-teal: #63B6BB;
+    --gr-teal-light: #e0f4f5;
+    --gr-green: #4CAE4F;
+    --gr-green-light: #e8f5e9;
+    --gr-dark: #1E2125;
+    --gr-border: #E1E7EF;
+    --ol-blue: #0078d4;
+    --ol-bg: #f3f2f1;
+    --ol-border: #edebe9;
+    --score-good: #4CAE4F;
+    --score-good-bg: #e8f5e9;
+    --score-warn: #f59e0b;
+    --score-warn-bg: #fffbeb;
+    --score-bad: #ef4444;
+    --score-bad-bg: #fef2f2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--ol-bg); color: var(--gr-dark); overflow: hidden; height: 100vh; }
+
+  /* ===== CONTROL BAR ===== */
+  .control-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: var(--gr-dark); padding: 8px 20px;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .control-bar .logo { font-size: 16px; font-weight: 700; color: white; letter-spacing: 1px; }
+  .control-bar .logo span { color: var(--gr-blue); }
+  .sub-logo { font-weight: 300; font-size: 12px; opacity: 0.4; color: white; }
+  .sep { width: 1px; height: 24px; background: rgba(255,255,255,0.15); }
+  .layer-toggle { display: flex; align-items: center; gap: 8px; }
+  .layer-toggle .label { color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 500; }
+  .toggle-switch { position: relative; width: 44px; height: 24px; cursor: pointer; }
+  .toggle-switch input { display: none; }
+  .toggle-slider { position: absolute; inset: 0; background: #4b5563; border-radius: 12px; transition: all 0.3s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .toggle-switch input:checked + .toggle-slider { background: var(--gr-blue); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+  .toggle-status { font-size: 11px; font-weight: 600; }
+  .toggle-status.on { color: var(--gr-blue); }
+  .toggle-status.off { color: #6b7280; }
+  .opt-tab { padding: 6px 16px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(255,255,255,0.6); font-size: 12px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .opt-tab:hover { background: rgba(255,255,255,0.08); color: white; }
+  .opt-tab.active { background: var(--gr-blue); border-color: var(--gr-blue); color: white; font-weight: 600; }
+  .opt-tab:disabled { opacity: 0.3; cursor: not-allowed; }
+  .opt-desc { color: rgba(255,255,255,0.4); font-size: 10px; margin-left: auto; font-style: italic; }
+
+  /* ===== OUTLOOK — Faithful header ===== */
+  .outlook-container { margin-top: 42px; height: calc(100vh - 42px); display: flex; flex-direction: column; }
+
+  /* Top blue header with mountains background */
+  .outlook-header {
+    background: linear-gradient(90deg, #2b5797 0%, #3b7dc7 40%, #5a95d5 100%);
+    background-image: linear-gradient(90deg, rgba(43,87,151,0.75), rgba(91,149,213,0.75)), url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=2000&q=60');
+    background-size: cover;
+    background-position: center;
+    height: 52px;
+    display: flex; align-items: center;
+    padding: 0 12px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .ol-logo {
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    display: flex; align-items: center; gap: 8px;
+    padding-left: 40px;
+  }
+  .ol-search-bar {
+    flex: 1; max-width: 560px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.92);
+    border-radius: 6px;
+    padding: 7px 14px;
+    color: #605e5c;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .ol-header-icons {
+    display: flex; align-items: center; gap: 6px;
+    margin-left: auto;
+  }
+  .ol-icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.15);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: white;
+  }
+  .ol-icon-btn:hover { background: rgba(255,255,255,0.25); }
+  .ol-user {
+    display: flex; align-items: center; gap: 8px;
+    color: white; font-size: 13px; font-weight: 600;
+    padding: 4px 8px;
+  }
+  .ol-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #e8dcc4;
+    border: 2px solid white;
+    flex-shrink: 0;
+    background-image: linear-gradient(135deg, #f5deb3, #d2b48c);
+  }
+
+  /* Tabs row (Accueil / Afficher / Aide) */
+  .ol-tabs-row {
+    background: white;
+    border-bottom: 1px solid var(--ol-border);
+    display: flex; align-items: center;
+    padding: 0 12px;
+    flex-shrink: 0;
+    height: 38px;
+  }
+  .ol-burger {
+    width: 32px; height: 32px;
+    border: none; background: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #323130;
+    font-size: 16px;
+    margin-right: 4px;
+  }
+  .ol-burger:hover { background: #f3f2f1; border-radius: 4px; }
+  .ol-tab {
+    padding: 8px 14px;
+    font-size: 13px; cursor: pointer;
+    color: #323130; position: relative;
+  }
+  .ol-tab.active {
+    font-weight: 600;
+  }
+  .ol-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 14px; right: 14px;
+    height: 2px;
+    background: var(--ol-blue);
+    border-radius: 2px;
+  }
+
+  /* Ribbon row (Nouvel événement / Jour / Semaine / ...) */
+  .outlook-toolbar {
+    background: #fff;
+    border-bottom: 1px solid var(--ol-border);
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0;
+  }
+  .tb {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: white;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--gr-dark);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tb:hover { background: #f3f2f1; }
+  .tb.primary {
+    background: white;
+    color: var(--ol-blue);
+    border: 1px solid #c8c6c4;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .tb.primary:hover { background: #f0f6fc; }
+  .tb.primary .plus-icon {
+    background: var(--ol-blue);
+    color: white;
+    width: 18px; height: 18px;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: bold;
+  }
+  .tb.active { background: #e1dfdd; font-weight: 600; border-color: #c8c6c4; }
+  .tb.disabled { opacity: 0.4; cursor: not-allowed; }
+  .tb-sep { width: 1px; height: 22px; background: var(--ol-border); margin: 0 4px; }
+  .tb-chevron {
+    background: none; border: none; cursor: pointer;
+    padding: 4px 8px; font-size: 12px; color: #605e5c;
+    border-radius: 4px;
+  }
+  .tb-chevron:hover { background: #f3f2f1; }
+  .tb-copilot {
+    width: 32px; height: 32px;
+    border: 2px solid transparent;
+    background: conic-gradient(from 45deg, #a864ff, #4387f4, #63b6bb, #a864ff);
+    border-radius: 50%;
+    padding: 2px;
+    cursor: pointer;
+    position: relative;
+    margin-left: 4px;
+  }
+  .tb-copilot::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: white;
+    border-radius: 50%;
+  }
+
+  /* Gr33t ribbon button — placed correctly in ribbon */
+  .gr33t-ribbon-btn {
+    padding: 4px 12px 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--gr-blue);
+    background: var(--gr-blue-light);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--gr-blue-dark);
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s;
+  }
+  .gr33t-ribbon-btn:hover { background: #d4e2fc; box-shadow: 0 1px 4px rgba(67,135,244,0.2); }
+  .gr33t-ribbon-btn.active { background: var(--gr-blue); color: white; }
+  .gr33t-ribbon-btn.active .score-badge { background: white; color: var(--gr-blue); }
+  .score-badge {
+    background: var(--gr-blue); color: white;
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+  .gr33t-logo-mini { font-weight: 700; letter-spacing: 0.5px; }
+  .gr33t-logo-mini span { color: var(--gr-teal); }
+  .gr33t-ribbon-btn.active .gr33t-logo-mini span { color: #c0f0f4; }
+
+  /* ===== BANDEAU (Option B) ===== */
+  .gr33t-banner { background: linear-gradient(135deg, var(--gr-blue-light) 0%, #f0f4ff 50%, var(--gr-teal-light) 100%); border-bottom: 2px solid var(--gr-blue); padding: 7px 16px; display: flex; align-items: center; gap: 16px; font-size: 12px; flex-shrink: 0; position: relative; transition: all 0.3s; }
+  .gr33t-banner::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--gr-blue); }
+  .banner-score-area { display: flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+  .banner-pct { font-size: 18px; font-weight: 700; min-width: 40px; }
+  .banner-pct.good { color: var(--score-good); }
+  .banner-pct.warn { color: var(--score-warn); }
+  .banner-pct.bad { color: var(--score-bad); }
+  .banner-pct.future { color: #9ca3af; }
+  .banner-bar-wrap { width: 80px; }
+  .banner-bar { height: 6px; background: var(--gr-border); border-radius: 3px; overflow: hidden; }
+  .banner-bar .fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .banner-info { font-size: 11px; }
+  .banner-info .title { font-weight: 600; color: var(--gr-dark); }
+  .banner-info .sub { font-size: 9px; color: #6b7280; }
+  .banner-factors { display: flex; gap: 14px; flex: 1; }
+  .bf { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--gr-dark); }
+  .bf-bar { width: 40px; height: 5px; background: var(--gr-border); border-radius: 3px; overflow: hidden; }
+  .bf-bar .fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .fg { background: var(--score-good); }
+  .fo { background: var(--score-warn); }
+  .fb { background: var(--gr-blue); }
+  .fr { background: var(--score-bad); }
+  .bf-v { font-weight: 600; font-size: 10px; }
+
+  /* ===== MAIN LAYOUT ===== */
+  .main-layout { display: flex; flex: 1; overflow: hidden; }
+  .outlook-sidebar { width: 210px; background: #faf9f8; border-right: 1px solid var(--ol-border); padding: 12px; font-size: 12px; flex-shrink: 0; overflow-y: auto; }
+  .sidebar-month { font-weight: 600; margin-bottom: 6px; font-size: 12px; }
+  .mini-cal { display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; text-align: center; font-size: 10px; margin-bottom: 12px; }
+  .mini-cal .hd { color: #605e5c; font-weight: 600; padding: 3px; }
+  .mini-cal .d { padding: 3px; border-radius: 50%; cursor: pointer; }
+  .mini-cal .d:hover { background: #e1dfdd; }
+  .mini-cal .d.today { background: var(--ol-blue); color: white; font-weight: 700; }
+
+  /* ===== CALENDAR ===== */
+  .calendar-area { flex: 1; background: white; overflow-y: auto; position: relative; }
+  .cal-header { display: flex; border-bottom: 1px solid var(--ol-border); position: sticky; top: 0; background: white; z-index: 10; }
+  .cal-header .tg { width: 48px; min-width: 48px; }
+  .cal-header .dc { flex: 1; text-align: center; padding: 6px 4px 4px; font-size: 11px; border-left: 1px solid var(--ol-border); cursor: pointer; transition: background 0.2s; position: relative; }
+  .cal-header .dc:hover { background: #f8f9fa; }
+  .cal-header .dc.selected { background: var(--gr-blue-light); }
+  .dc .dn { font-size: 18px; font-weight: 600; }
+  .dc .dl { color: #605e5c; font-size: 10px; margin-bottom: 3px; }
+  .dc.today .dn { background: var(--ol-blue); color: white; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+
+  /* Day header progress bar */
+  .dc .day-bar-wrap { padding: 0 6px; margin-top: 2px; }
+  .dc .day-bar { height: 4px; background: var(--gr-border); border-radius: 2px; overflow: hidden; }
+  .dc .day-bar .fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+  .dc .day-pct { font-size: 9px; font-weight: 700; margin-top: 1px; }
+  .dc .day-pct.good { color: var(--score-good); }
+  .dc .day-pct.warn { color: var(--score-warn); }
+  .dc .day-pct.bad { color: var(--score-bad); }
+  .dc .day-pct.future { color: #c8ccd2; }
+
+  .cal-body { position: relative; }
+  .cr { display: flex; height: 50px; border-bottom: 1px solid #f3f2f1; }
+  .cr .tg { width: 48px; min-width: 48px; padding: 2px 6px 0 0; text-align: right; font-size: 10px; color: #605e5c; }
+  .cr .cc { flex: 1; border-left: 1px solid #f3f2f1; position: relative; }
+
+  .ev { position: absolute; left: 3px; right: 3px; border-radius: 3px; padding: 3px 6px; font-size: 10px; overflow: hidden; cursor: pointer; z-index: 5; border-left: 3px solid; }
+  .ev-b { background: #deecf9; border-color: var(--ol-blue); color: #004578; }
+  .ev-p { background: #e8daef; border-color: #8e44ad; color: #6c3483; }
+  .ev-t { background: #d1f2eb; border-color: #1abc9c; color: #0e6655; }
+  .ev-title { font-weight: 600; }
+  .ev-time { font-size: 9px; opacity: 0.7; }
+
+  /* ===== INLINE INDICATORS ===== */
+  .inline-indicators { transition: opacity 0.3s; }
+  .dw-zone { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(67,135,244,0.06) 6px, rgba(67,135,244,0.06) 12px); border-left: 3px solid rgba(67,135,244,0.25); z-index: 1; pointer-events: none; }
+  .dw-label { position: absolute; font-size: 8px; color: var(--gr-blue); font-weight: 600; background: rgba(232,240,254,0.9); padding: 1px 5px; border-radius: 2px; z-index: 2; pointer-events: none; }
+  .tr-alert { position: absolute; left: 0; right: 0; height: 16px; background: rgba(245,158,11,0.08); border-top: 2px dashed var(--score-warn); z-index: 6; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #d97706; font-weight: 600; pointer-events: none; }
+  .mt-badge { position: absolute; top: 2px; right: 2px; background: var(--score-bad-bg); border: 1px solid #fca5a5; color: var(--score-bad); font-size: 8px; font-weight: 600; padding: 0 4px; border-radius: 3px; z-index: 7; pointer-events: none; }
+
+  /* ===== TASKPANE (Option A) — Style Google ===== */
+  .gr33t-taskpane {
+    width: 320px; background: #fff;
+    border-left: 1px solid var(--gr-border);
+    overflow-y: auto; font-size: 13px; flex-shrink: 0;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.06);
+    transition: all 0.3s;
+  }
+  /* TP Header */
+  .tp-head {
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid var(--gr-border);
+  }
+  .tp-head-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+  }
+  .tp-day-title { font-size: 14px; font-weight: 700; color: var(--gr-dark); }
+  .tp-close {
+    width: 28px; height: 28px; border: none; background: none;
+    font-size: 18px; color: #9ca3af; cursor: pointer; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tp-close:hover { background: #f3f4f6; color: var(--gr-dark); }
+
+  .tp-score-row {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 10px;
+  }
+  .tp-score-pct {
+    font-size: 28px; font-weight: 700; line-height: 1;
+  }
+  .tp-score-pct.good { color: var(--score-good); }
+  .tp-score-pct.warn { color: var(--score-warn); }
+  .tp-score-pct.bad { color: var(--score-bad); }
+  .tp-score-pct.future { color: #9ca3af; }
+  .tp-score-label {
+    font-size: 13px; color: #374151; line-height: 1.3;
+  }
+
+  .tp-bar { height: 6px; background: var(--gr-border); border-radius: 3px; overflow: hidden; }
+  .tp-bar .fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+
+  /* TP Factors */
+  .tp-factors { padding: 0 18px; }
+  .tp-fct {
+    padding: 14px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .tp-fct:last-child { border-bottom: none; }
+  .tp-fct-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .tp-fct-name { font-size: 13px; font-weight: 600; color: var(--gr-dark); }
+  .tp-fct-summary { font-size: 12px; font-weight: 700; text-align: right; }
+  .tp-fct-summary.good { color: var(--score-good); }
+  .tp-fct-summary.warn { color: var(--score-warn); }
+  .tp-fct-summary.bad { color: var(--score-bad); }
+  .tp-fct-summary.neutral { color: var(--gr-blue); }
+
+  .tp-fct-detail { padding-left: 8px; }
+  .tp-fct-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 3px 0; font-size: 11px; color: #6b7280;
+  }
+  .tp-fct-row .label { flex: 1; }
+  .tp-fct-row .status { flex-shrink: 0; margin-left: 8px; font-size: 12px; }
+  .tp-fct-row .status.ok { color: var(--score-good); }
+  .tp-fct-row .status.nok { color: var(--score-bad); }
+  .tp-fct-row .status.alert { color: var(--score-warn); }
+  .tp-fct-more {
+    font-size: 11px; color: var(--gr-blue); cursor: pointer;
+    font-weight: 500; padding: 3px 0 0 8px;
+  }
+
+  /* TP Actions */
+  .tp-actions {
+    padding: 12px 18px;
+    border-top: 1px solid var(--gr-border);
+  }
+  .tp-refresh {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 8px;
+    background: white; border: 1px solid var(--gr-border); border-radius: 6px;
+    font-size: 12px; color: var(--gr-blue); cursor: pointer; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .tp-refresh:hover { background: var(--gr-blue-light); border-color: var(--gr-blue); }
+
+  /* TP Trend */
+  .tp-trend { padding: 14px 18px; border-top: 1px solid var(--gr-border); }
+  .tp-trend h3 { font-size: 12px; font-weight: 600; margin-bottom: 8px; color: var(--gr-dark); }
+  .tp-trend-chart { height: 72px; background: #fafbfc; border-radius: 6px; border: 1px solid var(--gr-border); padding: 6px; }
+  .tp-trend-chart svg { width: 100%; height: 100%; }
+
+  /* TP Footer */
+  .tp-foot {
+    padding: 12px 18px;
+    text-align: center;
+    border-top: 1px solid var(--gr-border);
+    font-size: 11px; color: #9ca3af; font-style: italic;
+    line-height: 1.4;
+  }
+
+  /* No data state */
+  .tp-nodata {
+    padding: 40px 24px; text-align: center;
+    color: #9ca3af; font-size: 13px;
+  }
+  .tp-nodata .icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* ===== VISIBILITY ===== */
+  .hidden { display: none !important; }
+  .layer-off .gr33t-ribbon-btn,
+  .layer-off .gr33t-banner,
+  .layer-off .gr33t-taskpane,
+  .layer-off .gr33t-taskpane-d,
+  .layer-off .inline-indicators,
+  .layer-off .day-bar-wrap,
+  .layer-off .day-pct { display: none !important; }
+
+  /* Hide all Gr33t injections when option D active */
+  .option-d-active .day-bar-wrap,
+  .option-d-active .day-pct { display: none !important; }
+  .option-d-active .dc.selected { background: transparent !important; box-shadow: none !important; }
+  .option-d-active .dc { cursor: default !important; }
+
+  /* ===== Week Selector in TaskPane D ===== */
+  .tp-week-selector {
+    display: flex;
+    gap: 4px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gr-border);
+    background: #fafbfc;
+  }
+  .tp-ws-day {
+    flex: 1;
+    padding: 6px 2px;
+    border-radius: 6px;
+    border: 1px solid var(--gr-border);
+    background: white;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .tp-ws-day:hover { border-color: var(--gr-blue); background: var(--gr-blue-light); }
+  .tp-ws-day.active {
+    border-color: var(--gr-blue);
+    background: var(--gr-blue);
+    color: white;
+  }
+  .tp-ws-day.active .ws-score { color: rgba(255,255,255,0.8); }
+  .tp-ws-day.future { opacity: 0.5; }
+  .tp-ws-day.future .ws-score { color: #c8ccd2; }
+  .ws-label { font-size: 9px; font-weight: 600; text-transform: uppercase; }
+  .ws-num { font-size: 15px; font-weight: 700; line-height: 1.2; }
+  .ws-score { font-size: 9px; font-weight: 700; }
+  .ws-score.good { color: var(--score-good); }
+  .ws-score.warn { color: var(--score-warn); }
+  .ws-score.bad { color: var(--score-bad); }
+  .ws-bar { height: 3px; background: var(--gr-border); border-radius: 2px; overflow: hidden; margin: 3px 4px 0; }
+  .ws-bar .fill { height: 100%; border-radius: 2px; }
+  .tp-ws-day.active .ws-bar { background: rgba(255,255,255,0.25); }
+
+  /* ===== TASKPANE D — Mini Timeline ===== */
+  .gr33t-taskpane-d {
+    width: 340px; background: #fff;
+    border-left: 1px solid var(--gr-border);
+    overflow-y: auto; font-size: 13px; flex-shrink: 0;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.06);
+    transition: all 0.3s;
+  }
+
+  /* Timeline container */
+  .tp-timeline-wrap {
+    display: flex;
+    gap: 0;
+    padding: 12px 10px 12px 0;
+    border-bottom: 1px solid var(--gr-border);
+  }
+  .tp-tl-hours {
+    width: 28px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 0 4px 0 6px;
+  }
+  .tp-tl-hours span {
+    font-size: 8px; color: #9ca3af; text-align: right; line-height: 1;
+  }
+  .tp-tl-track {
+    flex: 1;
+    position: relative;
+    background: #fafbfc;
+    border: 1px solid var(--gr-border);
+    border-radius: 4px;
+    min-height: 300px;
+    overflow: hidden;
+  }
+  /* Hour grid lines */
+  .tp-tl-grid-line {
+    position: absolute; left: 0; right: 0;
+    border-top: 1px solid #f0f0f0;
+    pointer-events: none;
+  }
+  /* Lunch break */
+  .tp-tl-lunch {
+    position: absolute; left: 0; right: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, #f9fafb 3px, #f9fafb 6px);
+    border-top: 1px dashed #e5e7eb;
+    border-bottom: 1px dashed #e5e7eb;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .tp-tl-lunch-label {
+    position: absolute; right: 4px; top: 1px;
+    font-size: 7px; color: #c8ccd2; font-style: italic;
+  }
+  /* Meeting blocks */
+  .tp-tl-event {
+    position: absolute; left: 4px; right: 4px;
+    border-radius: 3px;
+    padding: 2px 5px;
+    font-size: 8px; font-weight: 600;
+    overflow: hidden;
+    z-index: 3;
+    border-left: 3px solid;
+    transition: opacity 0.2s, box-shadow 0.2s;
+  }
+  .tp-tl-event .ev-t-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tp-tl-event .ev-t-time { font-size: 7px; font-weight: 400; opacity: 0.7; }
+  .tp-tl-ev-b { background: #deecf9; border-color: var(--ol-blue); color: #004578; }
+  .tp-tl-ev-p { background: #e8daef; border-color: #8e44ad; color: #6c3483; }
+  .tp-tl-ev-t { background: #d1f2eb; border-color: #1abc9c; color: #0e6655; }
+
+  /* Overlay zones (shown on hover) */
+  .tp-tl-overlay {
+    position: absolute; left: 0; right: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .tp-tl-overlay.visible { opacity: 1; }
+
+  .tl-zone-deepwork {
+    position: absolute; left: 0; right: 0;
+    background: repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(67,135,244,0.1) 4px, rgba(67,135,244,0.1) 8px);
+    border-left: 3px solid rgba(67,135,244,0.4);
+  }
+  .tl-zone-deepwork-label {
+    position: absolute; left: 8px; top: 2px;
+    font-size: 7px; color: var(--gr-blue); font-weight: 600;
+    background: rgba(232,240,254,0.95); padding: 0 4px; border-radius: 2px;
+  }
+  .tl-zone-transition {
+    position: absolute; left: 0; right: 0;
+    background: rgba(245,158,11,0.12);
+    border-top: 2px dashed var(--score-warn);
+    border-bottom: 1px dashed var(--score-warn);
+  }
+  .tl-zone-transition-label {
+    position: absolute; left: 50%; transform: translateX(-50%); top: 1px;
+    font-size: 7px; color: #d97706; font-weight: 700;
+    background: rgba(255,251,235,0.95); padding: 0 4px; border-radius: 2px;
+    white-space: nowrap;
+  }
+  .tl-zone-multitask {
+    position: absolute; left: 0; right: 0;
+    border: 2px solid var(--score-bad);
+    border-radius: 3px;
+    background: rgba(239,68,68,0.06);
+  }
+  .tl-zone-multitask-label {
+    position: absolute; right: 3px; top: 1px;
+    font-size: 7px; color: var(--score-bad); font-weight: 700;
+    background: rgba(254,242,242,0.95); padding: 0 3px; border-radius: 2px;
+  }
+  .tl-zone-overtime {
+    position: absolute; left: 0; right: 0;
+    background: rgba(239,68,68,0.06);
+    border-left: 3px solid rgba(239,68,68,0.3);
+  }
+  .tl-zone-overtime-label {
+    position: absolute; left: 8px; bottom: 2px;
+    font-size: 7px; color: var(--score-bad); font-weight: 600;
+    background: rgba(254,242,242,0.95); padding: 0 4px; border-radius: 2px;
+  }
+
+  /* Factor hover highlight */
+  .tp-fct-d {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f3f4f6;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .tp-fct-d:last-child { border-bottom: none; }
+  .tp-fct-d:hover { background: #f8f9fb; }
+  .tp-fct-d.highlight-multitask { border-left-color: var(--score-bad); background: #fef8f8; }
+  .tp-fct-d.highlight-transitions { border-left-color: var(--score-warn); background: #fffdf5; }
+  .tp-fct-d.highlight-debordement { border-left-color: var(--score-bad); background: #fef8f8; }
+  .tp-fct-d.highlight-deepwork { border-left-color: var(--gr-blue); background: #f5f8fe; }
+
+  .tp-factors-d { padding: 0 4px; }
+
+  /* ===== BOTTOM INFO ===== */
+  .option-info {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
+    background: rgba(30,33,37,0.95); backdrop-filter: blur(8px);
+    color: white; padding: 8px 20px;
+    display: flex; align-items: center; gap: 14px; font-size: 11px;
+  }
+  .option-info .tag { background: var(--gr-blue); color: white; padding: 2px 10px; border-radius: 3px; font-weight: 700; font-size: 10px; white-space: nowrap; }
+  .option-info .desc { flex: 1; color: rgba(255,255,255,0.75); }
+  .option-info .pros { color: var(--score-good); font-size: 10px; }
+  .option-info .cons { color: #f87171; font-size: 10px; margin-left: 12px; }
+
+</style>
+</head>
+<body>
+
+<!-- CONTROL BAR -->
+<div class="control-bar">
+  <span class="logo">Gr<span>33</span>t</span>
+  <span class="sub-logo">× Outlook</span>
+  <div class="sep"></div>
+  <div class="layer-toggle">
+    <span class="label">Layer</span>
+    <label class="toggle-switch"><input type="checkbox" id="layerToggle" checked onchange="toggleLayer()"><span class="toggle-slider"></span></label>
+    <span class="toggle-status on" id="toggleStatus">ON</span>
+  </div>
+  <div class="sep"></div>
+  <button class="opt-tab active" id="tabA" onclick="showOption('A')">A — TaskPane + Inline</button>
+  <button class="opt-tab" id="tabB" onclick="showOption('B')">B — Bandeau + Inline</button>
+  <button class="opt-tab" id="tabC" onclick="showOption('C')">C — Inline seul</button>
+  <button class="opt-tab" id="tabD" onclick="showOption('D')">D — Timeline intégrée</button>
+  <span class="opt-desc" id="switcherDesc">Panneau latéral + indicateurs calendrier</span>
+</div>
+
+<!-- OFF OVERLAY removed -->
+
+<!-- OUTLOOK -->
+<div class="outlook-container" id="outlookContainer">
+
+  <!-- TOP HEADER (mountains + search + icons + user) -->
+  <div class="outlook-header">
+    <div class="ol-logo">Outlook</div>
+    <div class="ol-search-bar">🔍 Rechercher</div>
+    <div class="ol-header-icons">
+      <button class="ol-icon-btn" title="Teams">💬</button>
+      <button class="ol-icon-btn" title="OneNote">📝</button>
+      <button class="ol-icon-btn" title="Notifications">🔔</button>
+      <button class="ol-icon-btn" title="Paramètres">⚙</button>
+      <div class="ol-user">
+        <span>Arnaud Rayrole (G...</span>
+        <div class="ol-avatar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS ROW -->
+  <div class="ol-tabs-row">
+    <button class="ol-burger">☰</button>
+    <div class="ol-tab active">Accueil</div>
+    <div class="ol-tab">Afficher</div>
+    <div class="ol-tab">Aide</div>
+  </div>
+
+  <!-- RIBBON -->
+  <div class="outlook-toolbar" id="toolbar">
+    <button class="tb primary"><span class="plus-icon">+</span>Nouvel évènement <span style="opacity:0.5;">▾</span></button>
+    <button class="tb"><span>📅</span>Jour <span style="opacity:0.5;font-size:10px;">▾</span></button>
+    <button class="tb"><span>📋</span>Semaine de travail</button>
+    <button class="tb active"><span>▦</span>Semaine</button>
+    <button class="tb"><span>🗓</span>Mois</button>
+    <button class="tb disabled"><span>⊞</span>Mode Fractionné</button>
+    <div class="tb-sep"></div>
+    <button class="tb"><span>⚏</span>Filtre appliqué <span style="opacity:0.5;">▾</span></button>
+    <button class="tb"><span>↗</span>Partager</button>
+    <button class="tb"><span>🖨</span>Imprimer</button>
+
+    <div style="flex: 1;"></div>
+
+    <!-- Gr33t add-in button (placed in the ribbon, before Copilot) -->
+    <button class="gr33t-ribbon-btn active" id="ribbonBtn" title="Ouvrir/fermer le panneau Gr33t" onclick="toggleTaskPane()">
+      <div class="score-badge" id="ribbonScore">65</div>
+      <span class="gr33t-logo-mini">Gr<span>33</span>t</span>
+    </button>
+
+    <button class="tb-chevron">▾</button>
+    <div class="tb-copilot" title="Copilot"></div>
+  </div>
+
+  <!-- BANDEAU (Option B) -->
+  <div class="gr33t-banner hidden" id="banner">
+    <div class="banner-score-area">
+      <div class="banner-pct warn" id="bannerPct">65%</div>
+      <div class="banner-bar-wrap"><div class="banner-bar"><div class="fill fo" id="bannerBarFill" style="width:65%;"></div></div></div>
+      <div class="banner-info"><div class="title" id="bannerTitle">Suivi modéré</div><div class="sub" id="bannerSub">Lun 6 avril</div></div>
+    </div>
+    <div class="banner-factors" id="bannerFactors">
+      <div class="bf"><span>Multi-tâche</span><div class="bf-bar"><div class="fill" id="bbf1"></div></div><span class="bf-v" id="bbfv1"></span></div>
+      <div class="bf"><span>Transitions</span><div class="bf-bar"><div class="fill" id="bbf2"></div></div><span class="bf-v" id="bbfv2"></span></div>
+      <div class="bf"><span>Débordement</span><div class="bf-bar"><div class="fill" id="bbf3"></div></div><span class="bf-v" id="bbfv3"></span></div>
+      <div class="bf"><span>Profond</span><div class="bf-bar"><div class="fill" id="bbf4"></div></div><span class="bf-v" id="bbfv4"></span></div>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <!-- SIDEBAR -->
+    <div class="outlook-sidebar">
+      <div class="sidebar-month">avril 2026</div>
+      <div class="mini-cal">
+        <div class="hd">L</div><div class="hd">M</div><div class="hd">M</div><div class="hd">J</div><div class="hd">V</div><div class="hd">S</div><div class="hd">D</div>
+        <div class="d">30</div><div class="d">31</div><div class="d">1</div><div class="d">2</div><div class="d">3</div><div class="d">4</div><div class="d">5</div>
+        <div class="d">6</div><div class="d">7</div><div class="d today">8</div><div class="d">9</div><div class="d">10</div><div class="d">11</div><div class="d">12</div>
+        <div class="d">13</div><div class="d">14</div><div class="d">15</div><div class="d">16</div><div class="d">17</div><div class="d">18</div><div class="d">19</div>
+        <div class="d">20</div><div class="d">21</div><div class="d">22</div><div class="d">23</div><div class="d">24</div><div class="d">25</div><div class="d">26</div>
+        <div class="d">27</div><div class="d">28</div><div class="d">29</div><div class="d">30</div><div class="d">1</div><div class="d">2</div><div class="d">3</div>
+      </div>
+      <div style="border-top:1px solid var(--ol-border);padding-top:8px;">
+        <div style="font-weight:600;margin-bottom:6px;font-size:12px;">Mes calendriers</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;"><span style="width:8px;height:8px;background:var(--ol-blue);border-radius:2px;"></span>Calendrier</div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="calendar-area">
+      <div class="cal-header">
+        <div class="tg"></div>
+        <div class="dc selected" data-day="0" onclick="selectDay(0, true)">
+          <div class="dn">6</div><div class="dl">Lun</div>
+          <div class="day-pct warn" id="dpct0">65%</div>
+          <div class="day-bar-wrap"><div class="day-bar"><div class="fill fo" style="width:65%;"></div></div></div>
+        </div>
+        <div class="dc" data-day="1" onclick="selectDay(1, true)">
+          <div class="dn">7</div><div class="dl">Mar</div>
+          <div class="day-pct good" id="dpct1">72%</div>
+          <div class="day-bar-wrap"><div class="day-bar"><div class="fill fg" style="width:72%;"></div></div></div>
+        </div>
+        <div class="dc today" data-day="2" onclick="selectDay(2, true)">
+          <div class="dn">8</div><div class="dl">Mer</div>
+          <div class="day-pct future" id="dpct2">—</div>
+          <div class="day-bar-wrap"><div class="day-bar"><div class="fill" style="width:0%;background:var(--gr-border);"></div></div></div>
+        </div>
+        <div class="dc" data-day="3" onclick="selectDay(3, true)">
+          <div class="dn">9</div><div class="dl">Jeu</div>
+          <div class="day-pct future" id="dpct3">—</div>
+          <div class="day-bar-wrap"><div class="day-bar"><div class="fill" style="width:0%;background:var(--gr-border);"></div></div></div>
+        </div>
+        <div class="dc" data-day="4" onclick="selectDay(4, true)">
+          <div class="dn">10</div><div class="dl">Ven</div>
+          <div class="day-pct future" id="dpct4">—</div>
+          <div class="day-bar-wrap"><div class="day-bar"><div class="fill" style="width:0%;background:var(--gr-border);"></div></div></div>
+        </div>
+      </div>
+
+      <div class="cal-body" id="calBody">
+        <div class="cr"><div class="tg">8:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">9:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">10:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">11:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">12:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">13:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">14:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">15:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">16:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">17:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">18:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">19:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">20:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+
+        <!-- EVENTS -->
+        <div class="ev ev-b" style="top:50px;height:44px;" data-col="0"><div class="ev-title">Standup</div><div class="ev-time">9:00-9:45</div></div>
+        <div class="ev ev-p" style="top:100px;height:50px;" data-col="0"><div class="ev-title">Comité Produit</div><div class="ev-time">10:00-11:00</div></div>
+        <div class="ev ev-t" style="top:300px;height:50px;" data-col="0"><div class="ev-title">Sync Ops</div><div class="ev-time">14:00-15:00</div></div>
+
+        <div class="ev ev-b" style="top:50px;height:50px;" data-col="1"><div class="ev-title">Comité Direction</div><div class="ev-time">9:00-10:00</div></div>
+        <div class="ev ev-p" style="top:100px;height:25px;" data-col="1"><div class="ev-title">Point Produit</div><div class="ev-time">10:00-10:30</div></div>
+        <div class="ev ev-t" style="top:300px;height:50px;" data-col="1"><div class="ev-title">1:1 Manager</div><div class="ev-time">14:00-15:00</div></div>
+
+        <div class="ev ev-b" style="top:75px;height:50px;" data-col="2"><div class="ev-title">Sprint Planning</div><div class="ev-time">9:30-10:30</div></div>
+        <div class="ev ev-p" style="top:150px;height:50px;" data-col="2"><div class="ev-title">Revue Design</div><div class="ev-time">11:00-12:00</div></div>
+        <div class="ev ev-t" style="top:350px;height:50px;" data-col="2"><div class="ev-title">Sync Client</div><div class="ev-time">15:00-16:00</div></div>
+
+        <div class="ev ev-b" style="top:100px;height:50px;" data-col="3"><div class="ev-title">All Hands</div><div class="ev-time">10:00-11:00</div></div>
+        <div class="ev ev-p" style="top:200px;height:50px;" data-col="3"><div class="ev-title">Workshop RH</div><div class="ev-time">12:00-13:00</div></div>
+
+        <div class="ev ev-t" style="top:50px;height:50px;" data-col="4"><div class="ev-title">Démo Sprint</div><div class="ev-time">9:00-10:00</div></div>
+        <div class="ev ev-b" style="top:350px;height:50px;" data-col="4"><div class="ev-title">Rétro</div><div class="ev-time">15:00-16:00</div></div>
+
+        <!-- INLINE INDICATORS -->
+        <div class="inline-indicators" id="inlineIndicators">
+          <div class="tr-alert" style="top:94px;" data-col="0">15 min transition</div>
+          <div class="dw-zone" style="top:150px;height:148px;" data-col="0"></div>
+          <div class="dw-label" style="top:152px;" data-col="0">2h profond</div>
+          <div class="dw-zone" style="top:350px;height:150px;" data-col="0"></div>
+          <div class="dw-label" style="top:352px;" data-col="0">3h profond</div>
+          <div class="mt-badge" style="top:102px;" data-col="0">1 mail</div>
+
+          <div class="tr-alert" style="top:96px;" data-col="1">0 min transition</div>
+          <div class="mt-badge" style="top:102px;" data-col="1">2 mails</div>
+          <div class="dw-zone" style="top:127px;height:171px;" data-col="1"></div>
+          <div class="dw-label" style="top:129px;" data-col="1">1h18 profond</div>
+          <div class="dw-zone" style="top:350px;height:150px;" data-col="1"></div>
+          <div class="dw-label" style="top:352px;" data-col="1">3h profond</div>
+
+          <div class="dw-zone" style="top:0px;height:75px;" data-col="2"></div>
+          <div class="dw-label" style="top:2px;" data-col="2">1h30 profond</div>
+          <div class="tr-alert" style="top:127px;" data-col="2">30 min</div>
+          <div class="dw-zone" style="top:202px;height:146px;" data-col="2"></div>
+          <div class="dw-label" style="top:204px;" data-col="2">2h30 profond</div>
+
+          <div class="dw-zone" style="top:0px;height:100px;" data-col="3"></div>
+          <div class="dw-label" style="top:2px;" data-col="3">2h profond</div>
+          <div class="dw-zone" style="top:250px;height:250px;" data-col="3"></div>
+          <div class="dw-label" style="top:252px;" data-col="3">5h profond</div>
+
+          <div class="dw-zone" style="top:100px;height:248px;" data-col="4"></div>
+          <div class="dw-label" style="top:102px;" data-col="4">5h profond</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASKPANE (Option A) — Google style -->
+    <div class="gr33t-taskpane" id="taskpane">
+      <div class="tp-head" id="tpHead">
+        <!-- filled by JS -->
+      </div>
+      <div class="tp-factors" id="tpFactors">
+        <!-- filled by JS -->
+      </div>
+      <div class="tp-actions">
+        <button class="tp-refresh">↻ Actualiser les données mail</button>
+      </div>
+      <div class="tp-trend">
+        <h3>Tendance — 3 semaines</h3>
+        <div class="tp-trend-chart">
+          <svg viewBox="0 0 260 60">
+            <line x1="15" y1="12" x2="255" y2="12" stroke="var(--gr-border)" stroke-width="0.5" stroke-dasharray="3"/>
+            <line x1="15" y1="30" x2="255" y2="30" stroke="var(--gr-border)" stroke-width="0.5" stroke-dasharray="3"/>
+            <line x1="15" y1="48" x2="255" y2="48" stroke="var(--gr-border)" stroke-width="0.5" stroke-dasharray="3"/>
+            <text x="0" y="14" font-size="5" fill="#9ca3af">100</text>
+            <text x="3" y="32" font-size="5" fill="#9ca3af">50</text>
+            <text x="6" y="50" font-size="5" fill="#9ca3af">0</text>
+            <path d="M20,24 L40,28 L55,22 L70,26 L90,24 L110,30 L130,20 L150,26 L170,24 L190,22 L210,19 L230,17 L248,15"
+                  fill="none" stroke="var(--gr-blue)" stroke-width="1.5"/>
+            <path d="M20,24 L40,28 L55,22 L70,26 L90,24 L110,30 L130,20 L150,26 L170,24 L190,22 L210,19 L230,17 L248,15 L248,52 L20,52 Z"
+                  fill="var(--gr-blue)" opacity="0.08"/>
+            <circle cx="248" cy="15" r="2.5" fill="var(--gr-blue)"/>
+            <text x="238" y="11" font-size="5" fill="var(--gr-blue)" font-weight="bold">72</text>
+            <text x="20" y="57" font-size="4" fill="#9ca3af">16/3</text>
+            <text x="90" y="57" font-size="4" fill="#9ca3af">23/3</text>
+            <text x="165" y="57" font-size="4" fill="#9ca3af">30/3</text>
+            <text x="238" y="57" font-size="4" fill="#9ca3af">7/4</text>
+          </svg>
+        </div>
+      </div>
+      <div class="tp-foot">Ces indicateurs sont définis dans le cadre de la politique QVCT de l'entreprise.</div>
+    </div>
+
+    <!-- TASKPANE D — with mini timeline -->
+    <div class="gr33t-taskpane-d hidden" id="taskpaneD">
+      <div class="tp-head" id="tpHeadD">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- WEEK SELECTOR -->
+      <div class="tp-week-selector" id="weekSelector">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- MINI TIMELINE -->
+      <div class="tp-timeline-wrap">
+        <div class="tp-tl-hours" id="tlHours">
+          <!-- filled by JS -->
+        </div>
+        <div class="tp-tl-track" id="tlTrack">
+          <!-- grid, events, overlays filled by JS -->
+        </div>
+      </div>
+
+      <div class="tp-factors-d" id="tpFactorsD">
+        <!-- filled by JS -->
+      </div>
+      <div class="tp-actions">
+        <button class="tp-refresh">↻ Actualiser les données mail</button>
+      </div>
+      <div class="tp-trend">
+        <h3>Tendance — 3 semaines</h3>
+        <div class="tp-trend-chart">
+          <svg viewBox="0 0 260 60">
+            <line x1="15" y1="12" x2="255" y2="12" stroke="var(--gr-border)" stroke-width="0.5" stroke-dasharray="3"/>
+            <line x1="15" y1="30" x2="255" y2="30" stroke="var(--gr-border)" stroke-width="0.5" stroke-dasharray="3"/>
+            <line x1="15" y1="48" x2="255" y2="48" stroke="var(--gr-border)" stroke-width="0.5" stroke-dasharray="3"/>
+            <text x="0" y="14" font-size="5" fill="#9ca3af">100</text>
+            <text x="3" y="32" font-size="5" fill="#9ca3af">50</text>
+            <text x="6" y="50" font-size="5" fill="#9ca3af">0</text>
+            <path d="M20,24 L40,28 L55,22 L70,26 L90,24 L110,30 L130,20 L150,26 L170,24 L190,22 L210,19 L230,17 L248,15"
+                  fill="none" stroke="var(--gr-blue)" stroke-width="1.5"/>
+            <path d="M20,24 L40,28 L55,22 L70,26 L90,24 L110,30 L130,20 L150,26 L170,24 L190,22 L210,19 L230,17 L248,15 L248,52 L20,52 Z"
+                  fill="var(--gr-blue)" opacity="0.08"/>
+            <circle cx="248" cy="15" r="2.5" fill="var(--gr-blue)"/>
+            <text x="238" y="11" font-size="5" fill="var(--gr-blue)" font-weight="bold">72</text>
+            <text x="20" y="57" font-size="4" fill="#9ca3af">16/3</text>
+            <text x="90" y="57" font-size="4" fill="#9ca3af">23/3</text>
+            <text x="165" y="57" font-size="4" fill="#9ca3af">30/3</text>
+            <text x="238" y="57" font-size="4" fill="#9ca3af">7/4</text>
+          </svg>
+        </div>
+      </div>
+      <div class="tp-foot">Ces indicateurs sont définis dans le cadre de la politique QVCT de l'entreprise.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM INFO -->
+<div class="option-info" id="optionInfo">
+  <div class="tag" id="infoTag">OPTION A</div>
+  <div class="desc" id="infoDesc">TaskPane + Inline — panneau détaillé + indicateurs sur le calendrier. Cliquez un jour pour voir son détail.</div>
+  <div class="pros" id="infoPros">✓ Détail complet par jour · Indicateurs visuels · Courbe tendance</div>
+  <div class="cons" id="infoCons">✗ Réduit l'espace calendrier (~320px)</div>
+</div>
+
+<script>
+// ========== DATA ==========
+const dayData = [
+  { // Lundi 6
+    day: 'Lun 6 avril', score: 65, scoreLabel: 'Suivi modéré des facteurs de récupération',
+    factors: [
+      { name: 'Multi-tâche', summary: '0/2 réunions', summaryClass: 'bad',
+        rows: [
+          { label: '10:00–11:00 Comité Produit', status: '1', statusClass: 'nok' },
+          { label: '14:00–15:00 Sync Ops', status: '0', statusClass: 'ok' },
+        ], more: null },
+      { name: 'Transitions', summary: '1/2 réunions', summaryClass: 'warn',
+        rows: [
+          { label: '9:45 → 10:00 Comité Produit', status: '15 min', statusClass: 'alert' },
+          { label: '11:00 → 14:00 Sync Ops', status: 'ok', statusClass: 'ok' },
+        ], more: null },
+      { name: 'Débordement', summary: '1 mail hors plage', summaryClass: 'bad',
+        rows: [
+          { label: 'Mail envoyé à 21:15', status: '⚠', statusClass: 'alert' },
+        ], more: null },
+      { name: 'Plage de travail profond disponible', summary: '3 blocs · 6h15', summaryClass: 'neutral',
+        rows: [
+          { label: '08:00–09:00 (60 min)', status: '✓', statusClass: 'ok' },
+          { label: '11:00–14:00 (150 min)', status: '✓', statusClass: 'ok' },
+        ], more: '+ 1 autre...' },
+    ]
+  },
+  { // Mardi 7
+    day: 'Mar 7 avril', score: 72, scoreLabel: 'Suivi modéré des facteurs de récupération',
+    factors: [
+      { name: 'Multi-tâche', summary: '1/3 réunions', summaryClass: 'warn',
+        rows: [
+          { label: '9:00–10:00 Comité Direction', status: '0', statusClass: 'ok' },
+          { label: '10:00–10:30 Point Produit', status: '2', statusClass: 'nok' },
+        ], more: '+ 1 autre...' },
+      { name: 'Transitions', summary: '2/3 réunions', summaryClass: 'warn',
+        rows: [
+          { label: '10:00 → 10:00 Point Produit', status: '0 min', statusClass: 'nok' },
+          { label: '10:30 → 14:00 1:1 Manager', status: 'ok', statusClass: 'ok' },
+        ], more: null },
+      { name: 'Débordement', summary: '0 mail hors plage', summaryClass: 'good',
+        rows: [
+          { label: 'Aucune activité hors 8h-20h', status: '✓', statusClass: 'ok' },
+        ], more: null },
+      { name: 'Plage de travail profond disponible', summary: '4 blocs · 8h18', summaryClass: 'neutral',
+        rows: [
+          { label: '08:00–09:00 (60 min)', status: '✓', statusClass: 'ok' },
+          { label: '10:30–14:00 (150 min)', status: '✓', statusClass: 'ok' },
+        ], more: '+ 2 autres...' },
+    ]
+  },
+  { day: 'Mer 8 avril', score: null, scoreLabel: null, factors: null },
+  { day: 'Jeu 9 avril', score: null, scoreLabel: null, factors: null },
+  { day: 'Ven 10 avril', score: null, scoreLabel: null, factors: null },
+];
+
+let currentOption = 'A';
+let selectedDay = 0;
+let layerOn = true;
+let taskPaneOpen = true;
+
+// ========== HELPERS ==========
+function scoreColor(s) {
+  if (s === null) return 'future';
+  if (s >= 80) return 'good';
+  if (s >= 50) return 'warn';
+  return 'bad';
+}
+function fillClass(s) {
+  if (s === null) return '';
+  if (s >= 80) return 'fg';
+  if (s >= 50) return 'fo';
+  return 'fr';
+}
+
+// ========== POSITION EVENTS ==========
+function positionEvents() {
+  const body = document.getElementById('calBody');
+  if (!body) return;
+  const firstRow = body.querySelector('.cr');
+  if (!firstRow) return;
+  const cells = firstRow.querySelectorAll('.cc');
+  if (!cells.length) return;
+  const bodyRect = body.getBoundingClientRect();
+  body.querySelectorAll('[data-col]').forEach(item => {
+    const col = parseInt(item.getAttribute('data-col'));
+    if (col >= cells.length) return;
+    const cell = cells[col];
+    const r = cell.getBoundingClientRect();
+    const left = r.left - bodyRect.left;
+    const w = r.width;
+    item.style.left = item.classList.contains('ev') ? (left+3)+'px' : left+'px';
+    item.style.width = item.classList.contains('ev') ? (w-6)+'px' : w+'px';
+  });
+}
+
+// ========== SELECT DAY ==========
+function selectDay(idx, fromCalendarHeader) {
+  if (!layerOn) return;
+  // In option D, clicking a calendar header is not possible in a real add-in
+  if (currentOption === 'D' && fromCalendarHeader) return;
+  selectedDay = idx;
+  const d = dayData[idx];
+
+  // Highlight column (not in option D — not feasible in real add-in)
+  if (currentOption !== 'D') {
+    document.querySelectorAll('.cal-header .dc[data-day]').forEach(el => el.classList.remove('selected'));
+    const dc = document.querySelector(`.dc[data-day="${idx}"]`);
+    if (dc) dc.classList.add('selected');
+  } else {
+    document.querySelectorAll('.cal-header .dc[data-day]').forEach(el => el.classList.remove('selected'));
+  }
+
+  // Ribbon
+  document.getElementById('ribbonScore').textContent = d.score !== null ? d.score : '—';
+
+  // TaskPane
+  renderTaskPane(d);
+
+  // TaskPane D
+  renderTaskPaneD(d, idx);
+
+  // Banner
+  renderBanner(d);
+}
+
+// ========== RENDER TASKPANE ==========
+function renderTaskPane(d) {
+  const head = document.getElementById('tpHead');
+  const fcts = document.getElementById('tpFactors');
+
+  if (d.score === null) {
+    const cls = scoreColor(d.score);
+    head.innerHTML = `
+      <div class="tp-head-top">
+        <div class="tp-day-title">${d.day}</div>
+        <button class="tp-close" onclick="closeTaskPane()">×</button>
+      </div>
+      <div class="tp-score-row">
+        <div class="tp-score-pct future">—</div>
+        <div class="tp-score-label">Données disponibles demain</div>
+      </div>
+      <div class="tp-bar"><div class="fill" style="width:0%;"></div></div>`;
+    fcts.innerHTML = `<div class="tp-nodata"><div class="icon">📊</div>Les indicateurs seront calculés<br>à la fin de la journée.</div>`;
+    return;
+  }
+
+  const cls = scoreColor(d.score);
+  const fc = fillClass(d.score);
+  head.innerHTML = `
+    <div class="tp-head-top">
+      <div class="tp-day-title">${d.day}</div>
+      <button class="tp-close" onclick="closeTaskPane()">×</button>
+    </div>
+    <div class="tp-score-row">
+      <div class="tp-score-pct ${cls}">${d.score}%</div>
+      <div class="tp-score-label">${d.scoreLabel}</div>
+    </div>
+    <div class="tp-bar"><div class="fill ${fc}" style="width:${d.score}%;"></div></div>`;
+
+  let html = '';
+  d.factors.forEach(f => {
+    html += `<div class="tp-fct">
+      <div class="tp-fct-head">
+        <div class="tp-fct-name">${f.name}</div>
+        <div class="tp-fct-summary ${f.summaryClass}">${f.summary}</div>
+      </div>
+      <div class="tp-fct-detail">`;
+    f.rows.forEach(r => {
+      html += `<div class="tp-fct-row">
+        <span class="label">${r.label}</span>
+        <span class="status ${r.statusClass}">${r.status}</span>
+      </div>`;
+    });
+    if (f.more) html += `<div class="tp-fct-more">${f.more}</div>`;
+    html += `</div></div>`;
+  });
+  fcts.innerHTML = html;
+}
+
+function closeTaskPane() {
+  taskPaneOpen = false;
+  document.getElementById('taskpane').classList.add('hidden');
+  document.getElementById('ribbonBtn').classList.remove('active');
+  setTimeout(positionEvents, 50);
+}
+
+// ========== RENDER BANNER ==========
+function renderBanner(d) {
+  const pct = document.getElementById('bannerPct');
+  const fill = document.getElementById('bannerBarFill');
+  const title = document.getElementById('bannerTitle');
+  const sub = document.getElementById('bannerSub');
+
+  if (d.score === null) {
+    pct.textContent = '—';
+    pct.className = 'banner-pct future';
+    fill.style.width = '0%';
+    fill.className = 'fill';
+    title.textContent = 'Pas encore de données';
+    sub.textContent = d.day;
+    ['bbf1','bbf2','bbf3','bbf4'].forEach(id => { const el = document.getElementById(id); el.style.width = '0%'; el.className = 'fill'; });
+    ['bbfv1','bbfv2','bbfv3','bbfv4'].forEach(id => { document.getElementById(id).textContent = '—'; document.getElementById(id).className = 'bf-v'; });
+    return;
+  }
+
+  const cls = scoreColor(d.score);
+  const fc = fillClass(d.score);
+  pct.textContent = d.score + '%';
+  pct.className = 'banner-pct ' + cls;
+  fill.style.width = d.score + '%';
+  fill.className = 'fill ' + fc;
+  title.textContent = d.score >= 80 ? 'Bon suivi' : d.score >= 50 ? 'Suivi modéré' : 'Suivi faible';
+  sub.textContent = d.day;
+
+  const factorFills = ['bbf1','bbf2','bbf3','bbf4'];
+  const factorVals = ['bbfv1','bbfv2','bbfv3','bbfv4'];
+  d.factors.forEach((f, i) => {
+    const bar = document.getElementById(factorFills[i]);
+    const val = document.getElementById(factorVals[i]);
+    // Simple mapping from summaryClass
+    const cmap = { good: ['fg','g'], warn: ['fo','o'], bad: ['fr','r'], neutral: ['fb','b'] };
+    const [bclass, vclass] = cmap[f.summaryClass] || ['fb','b'];
+    bar.className = 'fill ' + bclass;
+    bar.style.width = f.summaryClass === 'good' ? '100%' : f.summaryClass === 'warn' ? '60%' : f.summaryClass === 'bad' ? '25%' : '70%';
+    val.textContent = f.summary.split(' ')[0];
+    val.className = 'bf-v';
+    val.style.color = bclass === 'fg' ? 'var(--score-good)' : bclass === 'fo' ? 'var(--score-warn)' : bclass === 'fr' ? 'var(--score-bad)' : 'var(--gr-blue)';
+  });
+}
+
+// ========== TIMELINE DATA PER DAY ==========
+const tlData = [
+  { // Lundi 6
+    events: [
+      { start: 9, end: 9.75, name: 'Standup', cls: 'tp-tl-ev-b' },
+      { start: 10, end: 11, name: 'Comité Produit', cls: 'tp-tl-ev-p' },
+      { start: 14, end: 15, name: 'Sync Ops', cls: 'tp-tl-ev-t' },
+    ],
+    overlays: {
+      multitask: [
+        { start: 10, end: 11, label: '1 mail' },
+      ],
+      transitions: [
+        { start: 9.75, end: 10, label: '15 min' },
+      ],
+      debordement: [
+        { start: 20, end: 21.25, label: 'Mail 21:15' },
+      ],
+      deepwork: [
+        { start: 8, end: 9, label: '1h' },
+        { start: 11, end: 12.5, label: '1h30' },
+        { start: 13.5, end: 14, label: '30 min' },
+        { start: 15, end: 20, label: '5h' },
+      ],
+    }
+  },
+  { // Mardi 7
+    events: [
+      { start: 9, end: 10, name: 'Comité Direction', cls: 'tp-tl-ev-b' },
+      { start: 10, end: 10.5, name: 'Point Produit', cls: 'tp-tl-ev-p' },
+      { start: 14, end: 15, name: '1:1 Manager', cls: 'tp-tl-ev-t' },
+    ],
+    overlays: {
+      multitask: [
+        { start: 10, end: 10.5, label: '2 mails' },
+      ],
+      transitions: [
+        { start: 10, end: 10, label: '0 min !' },
+      ],
+      debordement: [],
+      deepwork: [
+        { start: 8, end: 9, label: '1h' },
+        { start: 10.5, end: 12.5, label: '2h' },
+        { start: 13.5, end: 14, label: '30 min' },
+        { start: 15, end: 20, label: '5h' },
+      ],
+    }
+  },
+  null, null, null, // Mer, Jeu, Ven
+];
+
+const TL_START = 8;
+const TL_END = 21;
+const TL_HOURS = TL_END - TL_START; // 13h
+const TL_HEIGHT = 300; // px
+
+function hourToY(h) { return ((h - TL_START) / TL_HOURS) * TL_HEIGHT; }
+function durationToH(from, to) { return hourToY(to) - hourToY(from); }
+
+// ========== RENDER TIMELINE ==========
+function renderTimeline(dayIdx) {
+  const hours = document.getElementById('tlHours');
+  const track = document.getElementById('tlTrack');
+  if (!hours || !track) return;
+
+  // Hours labels
+  let hhtml = '';
+  for (let h = TL_START; h <= TL_END; h++) {
+    hhtml += `<span style="position:absolute;top:${hourToY(h) - 4}px;">${h}h</span>`;
+  }
+  hours.style.position = 'relative';
+  hours.style.height = TL_HEIGHT + 'px';
+  hours.innerHTML = hhtml;
+
+  track.style.height = TL_HEIGHT + 'px';
+
+  const tl = tlData[dayIdx];
+  if (!tl) {
+    track.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#c8ccd2;font-size:11px;">Pas de données</div>';
+    return;
+  }
+
+  let html = '';
+
+  // Grid lines
+  for (let h = TL_START + 1; h < TL_END; h++) {
+    html += `<div class="tp-tl-grid-line" style="top:${hourToY(h)}px;"></div>`;
+  }
+
+  // Lunch
+  html += `<div class="tp-tl-lunch" style="top:${hourToY(12.5)}px;height:${durationToH(12.5,13.5)}px;"><span class="tp-tl-lunch-label">pause</span></div>`;
+
+  // Events
+  tl.events.forEach(ev => {
+    const top = hourToY(ev.start);
+    const h = durationToH(ev.start, ev.end);
+    html += `<div class="tp-tl-event ${ev.cls}" style="top:${top}px;height:${h}px;">
+      <div class="ev-t-name">${ev.name}</div>
+      ${h > 18 ? `<div class="ev-t-time">${fmtH(ev.start)}–${fmtH(ev.end)}</div>` : ''}
+    </div>`;
+  });
+
+  // Overlay layers (hidden by default)
+  const types = ['multitask','transitions','debordement','deepwork'];
+  types.forEach(type => {
+    html += `<div class="tp-tl-overlay" id="tl-ov-${type}">`;
+    const zones = tl.overlays[type];
+    zones.forEach(z => {
+      const top = hourToY(z.start);
+      const h = Math.max(durationToH(z.start, z.end), 6);
+      if (type === 'deepwork') {
+        html += `<div class="tl-zone-deepwork" style="top:${top}px;height:${h}px;"></div>`;
+        html += `<div class="tl-zone-deepwork-label" style="top:${top + 1}px;">${z.label}</div>`;
+      } else if (type === 'transitions') {
+        html += `<div class="tl-zone-transition" style="top:${top}px;height:${Math.max(h, 10)}px;"></div>`;
+        html += `<div class="tl-zone-transition-label" style="top:${top + 1}px;">${z.label}</div>`;
+      } else if (type === 'multitask') {
+        html += `<div class="tl-zone-multitask" style="top:${top}px;height:${h}px;"></div>`;
+        html += `<div class="tl-zone-multitask-label" style="top:${top + 1}px;">${z.label}</div>`;
+      } else if (type === 'debordement') {
+        html += `<div class="tl-zone-overtime" style="top:${top}px;height:${h}px;"></div>`;
+        html += `<div class="tl-zone-overtime-label" style="top:${top + Math.max(h-12, 1)}px;">${z.label}</div>`;
+      }
+    });
+    html += '</div>';
+  });
+
+  track.innerHTML = html;
+}
+
+function fmtH(h) {
+  const hr = Math.floor(h);
+  const mn = Math.round((h - hr) * 60);
+  return hr + ':' + (mn < 10 ? '0' : '') + mn;
+}
+
+// ========== RENDER TASKPANE D ==========
+function renderWeekSelector(dayIdx) {
+  const ws = document.getElementById('weekSelector');
+  if (!ws) return;
+  const days = [
+    { label: 'Lun', num: '6' },
+    { label: 'Mar', num: '7' },
+    { label: 'Mer', num: '8' },
+    { label: 'Jeu', num: '9' },
+    { label: 'Ven', num: '10' },
+  ];
+  let html = '';
+  days.forEach((dy, i) => {
+    const dd = dayData[i];
+    const isActive = i === dayIdx;
+    const isFuture = dd.score === null;
+    const cls = scoreColor(dd.score);
+    const fc = fillClass(dd.score);
+    const scoreText = dd.score !== null ? dd.score + '%' : '—';
+    html += `<div class="tp-ws-day${isActive ? ' active' : ''}${isFuture ? ' future' : ''}" onclick="selectDay(${i})">
+      <div class="ws-label">${dy.label}</div>
+      <div class="ws-num">${dy.num}</div>
+      <div class="ws-score ${cls}">${scoreText}</div>
+      <div class="ws-bar"><div class="fill ${fc}" style="width:${dd.score || 0}%;"></div></div>
+    </div>`;
+  });
+  ws.innerHTML = html;
+}
+
+function renderTaskPaneD(d, dayIdx) {
+  const head = document.getElementById('tpHeadD');
+  const fcts = document.getElementById('tpFactorsD');
+
+  // Week selector
+  renderWeekSelector(dayIdx);
+
+  if (d.score === null) {
+    head.innerHTML = `
+      <div class="tp-head-top"><div class="tp-day-title">${d.day}</div><button class="tp-close" onclick="closeTaskPaneD()">×</button></div>
+      <div class="tp-score-row"><div class="tp-score-pct future">—</div><div class="tp-score-label">Données disponibles demain</div></div>
+      <div class="tp-bar"><div class="fill" style="width:0%;"></div></div>`;
+    fcts.innerHTML = '';
+    renderTimeline(dayIdx);
+    return;
+  }
+
+  const cls = scoreColor(d.score);
+  const fc = fillClass(d.score);
+  head.innerHTML = `
+    <div class="tp-head-top"><div class="tp-day-title">${d.day}</div><button class="tp-close" onclick="closeTaskPaneD()">×</button></div>
+    <div class="tp-score-row"><div class="tp-score-pct ${cls}">${d.score}%</div><div class="tp-score-label">${d.scoreLabel}</div></div>
+    <div class="tp-bar"><div class="fill ${fc}" style="width:${d.score}%;"></div></div>`;
+
+  const factorTypes = ['multitask','transitions','debordement','deepwork'];
+  let html = '';
+  d.factors.forEach((f, i) => {
+    const ft = factorTypes[i];
+    html += `<div class="tp-fct-d" data-factor="${ft}"
+      onmouseenter="highlightTimeline('${ft}', true)"
+      onmouseleave="highlightTimeline('${ft}', false)">
+      <div class="tp-fct-head">
+        <div class="tp-fct-name">${f.name}</div>
+        <div class="tp-fct-summary ${f.summaryClass}">${f.summary}</div>
+      </div>
+      <div class="tp-fct-detail" style="padding-left:8px;">`;
+    f.rows.forEach(r => {
+      html += `<div class="tp-fct-row"><span class="label">${r.label}</span><span class="status ${r.statusClass}">${r.status}</span></div>`;
+    });
+    if (f.more) html += `<div class="tp-fct-more">${f.more}</div>`;
+    html += `</div></div>`;
+  });
+  fcts.innerHTML = html;
+  renderTimeline(dayIdx);
+}
+
+function highlightTimeline(factorType, show) {
+  // Show/hide overlay
+  const ov = document.getElementById('tl-ov-' + factorType);
+  if (ov) ov.classList.toggle('visible', show);
+
+  // Highlight factor row
+  const hlClass = 'highlight-' + factorType;
+  document.querySelectorAll('.tp-fct-d').forEach(el => {
+    if (el.getAttribute('data-factor') === factorType) {
+      el.classList.toggle(hlClass, show);
+    }
+  });
+}
+
+function closeTaskPaneD() {
+  taskPaneOpen = false;
+  document.getElementById('taskpaneD').classList.add('hidden');
+  document.getElementById('ribbonBtn').classList.remove('active');
+  setTimeout(positionEvents, 50);
+}
+
+function toggleTaskPane() {
+  if (!layerOn) return;
+  taskPaneOpen = !taskPaneOpen;
+  document.getElementById('ribbonBtn').classList.toggle('active', taskPaneOpen);
+  // Re-apply showOption which uses taskPaneOpen
+  showOption(currentOption);
+}
+
+// ========== OPTIONS ==========
+const optMeta = {
+  A: { tag: 'OPTION A', switcherDesc: 'Panneau latéral + indicateurs calendrier',
+    desc: 'TaskPane + Inline — barre de progression dans l\'en-tête de jour, panneau détaillé style Google au clic, indicateurs inline sur le calendrier.',
+    pros: '✓ Détail complet par jour · Wording Google · Indicateurs visuels · Courbe tendance',
+    cons: '✗ Réduit l\'espace calendrier (~320px)' },
+  B: { tag: 'OPTION B', switcherDesc: 'Bandeau compact + indicateurs calendrier',
+    desc: 'Bandeau + Inline — barre de progression dans l\'en-tête, bandeau compact mis à jour au clic, indicateurs inline.',
+    pros: '✓ Toujours visible · Ne réduit pas le calendrier · Indicateurs inline',
+    cons: '✗ Moins de détail · Pas de courbe tendance · Pas de détail réunions' },
+  C: { tag: 'OPTION C', switcherDesc: 'Indicateurs seuls sur le calendrier',
+    desc: 'Inline seul — barres de progression dans l\'en-tête + indicateurs visuels sur le calendrier. Aucun panneau.',
+    pros: '✓ Zéro espace supplémentaire · Discret · Barre de score visible',
+    cons: '✗ Pas de détail facteurs · Pas de tendance' },
+  D: { tag: 'OPTION D', switcherDesc: 'TaskPane + mini-timeline verticale au hover',
+    desc: 'TaskPane avec mini-timeline verticale intégrée. Au survol d\'un facteur, les zones correspondantes s\'illuminent sur la timeline. Pas d\'indicateurs inline sur le calendrier.',
+    pros: '✓ 100% faisable en add-in Outlook · Illustration visuelle · Détail complet · Pas de surcharge calendrier',
+    cons: '✗ Réduit l\'espace calendrier (~340px) · Timeline petite' }
+};
+
+function showOption(opt) {
+  if (!layerOn) return;
+  currentOption = opt;
+  document.querySelectorAll('.opt-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab'+opt).classList.add('active');
+
+  // TaskPane (A or D) visible only if taskPaneOpen is true AND the option uses a taskpane
+  document.getElementById('taskpane').classList.toggle('hidden', !(opt === 'A' && taskPaneOpen));
+  document.getElementById('taskpaneD').classList.toggle('hidden', !(opt === 'D' && taskPaneOpen));
+  document.getElementById('banner').classList.toggle('hidden', opt !== 'B');
+  document.getElementById('ribbonBtn').classList.toggle('hidden', opt === 'B');
+  document.getElementById('inlineIndicators').classList.toggle('hidden', opt === 'D');
+  document.getElementById('outlookContainer').classList.toggle('option-d-active', opt === 'D');
+  // Active state on the ribbon button reflects taskPaneOpen
+  document.getElementById('ribbonBtn').classList.toggle('active', taskPaneOpen && (opt === 'A' || opt === 'D'));
+
+  const o = optMeta[opt];
+  document.getElementById('infoTag').textContent = o.tag;
+  document.getElementById('infoDesc').textContent = o.desc;
+  document.getElementById('infoPros').textContent = o.pros;
+  document.getElementById('infoCons').textContent = o.cons;
+  document.getElementById('switcherDesc').textContent = o.switcherDesc;
+  setTimeout(positionEvents, 50);
+}
+
+function toggleLayer() {
+  layerOn = document.getElementById('layerToggle').checked;
+  const container = document.getElementById('outlookContainer');
+  const offOverlay = document.getElementById('offOverlay');
+  const infoBar = document.getElementById('optionInfo');
+  const statusEl = document.getElementById('toggleStatus');
+
+  if (layerOn) {
+    container.classList.remove('layer-off');
+    
+    infoBar.style.display = '';
+    document.querySelectorAll('.opt-tab').forEach(t => t.disabled = false);
+    statusEl.textContent = 'ON'; statusEl.className = 'toggle-status on';
+    showOption(currentOption);
+    selectDay(selectedDay);
+  } else {
+    container.classList.add('layer-off');
+        infoBar.style.display = 'none';
+    document.querySelectorAll('.opt-tab').forEach(t => t.disabled = true);
+    statusEl.textContent = 'OFF'; statusEl.className = 'toggle-status off';
+  }
+  setTimeout(positionEvents, 50);
+}
+
+// ========== INIT ==========
+window.addEventListener('load', () => {
+  positionEvents();
+  selectDay(0);
+  window.addEventListener('resize', positionEvents);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gr33t Layer — Add-in Outlook (Fluent Design)</title>
+<style>
+  /* ============================================================
+     FLUENT DESIGN SYSTEM TOKENS (Microsoft 365)
+     Based on Fluent UI v9 design tokens
+     ============================================================ */
+  :root {
+    /* --- Brand (Microsoft Blue) --- */
+    --colorBrandBackground: #0F6CBD;
+    --colorBrandBackgroundHover: #115EA3;
+    --colorBrandBackgroundPressed: #0C3B5E;
+    --colorBrandBackground2: #EBF3FC;
+    --colorBrandForeground1: #0F6CBD;
+    --colorBrandForeground2: #115EA3;
+    --colorBrandStroke1: #0F6CBD;
+    --colorBrandStroke2: #B4D6FA;
+
+    /* --- Neutral foreground --- */
+    --colorNeutralForeground1: #242424;
+    --colorNeutralForeground2: #424242;
+    --colorNeutralForeground3: #616161;
+    --colorNeutralForeground4: #707070;
+    --colorNeutralForegroundDisabled: #BDBDBD;
+    --colorNeutralForegroundOnBrand: #FFFFFF;
+
+    /* --- Neutral background --- */
+    --colorNeutralBackground1: #FFFFFF;
+    --colorNeutralBackground1Hover: #F5F5F5;
+    --colorNeutralBackground1Pressed: #E0E0E0;
+    --colorNeutralBackground1Selected: #EBEBEB;
+    --colorNeutralBackground2: #FAFAFA;
+    --colorNeutralBackground3: #F5F5F5;
+    --colorNeutralBackground4: #F0F0F0;
+    --colorNeutralBackground5: #EBEBEB;
+    --colorNeutralBackground6: #E6E6E6;
+
+    /* --- Neutral stroke --- */
+    --colorNeutralStroke1: #D1D1D1;
+    --colorNeutralStroke2: #E0E0E0;
+    --colorNeutralStroke3: #F0F0F0;
+    --colorNeutralStrokeSubtle: #EBEBEB;
+
+    /* --- Status (Fluent semantic) --- */
+    --colorStatusSuccessBackground1: #F1FAF1;
+    --colorStatusSuccessForeground1: #107C10;
+    --colorStatusSuccessBorder1: #9FD89F;
+
+    --colorStatusWarningBackground1: #FFF9F5;
+    --colorStatusWarningForeground1: #BC4B09;
+    --colorStatusWarningBorder1: #F4BFAB;
+
+    --colorStatusDangerBackground1: #FDF3F4;
+    --colorStatusDangerForeground1: #B10E1C;
+    --colorStatusDangerBorder1: #EEACB2;
+
+    /* --- Gr33t identity (add-in branding only) --- */
+    --gr33t-brand: #4387F4;
+    --gr33t-brand-light: #E8F0FE;
+    --gr33t-teal: #63B6BB;
+
+    /* --- Border radius --- */
+    --borderRadiusNone: 0;
+    --borderRadiusSmall: 2px;
+    --borderRadiusMedium: 4px;
+    --borderRadiusLarge: 6px;
+    --borderRadiusXLarge: 8px;
+    --borderRadiusCircular: 50%;
+
+    /* --- Shadows (Fluent elevation) --- */
+    --shadow2: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+    --shadow4: 0 0 2px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.14);
+    --shadow8: 0 0 2px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.14);
+    --shadow16: 0 0 2px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.14);
+
+    /* --- Spacing --- */
+    --spacingHorizontalXXS: 2px;
+    --spacingHorizontalXS: 4px;
+    --spacingHorizontalSNudge: 6px;
+    --spacingHorizontalS: 8px;
+    --spacingHorizontalMNudge: 10px;
+    --spacingHorizontalM: 12px;
+    --spacingHorizontalL: 16px;
+    --spacingHorizontalXL: 20px;
+    --spacingHorizontalXXL: 24px;
+
+    /* --- Typography ramp --- */
+    --fontFamilyBase: 'Segoe UI', 'Segoe UI Variable', -apple-system, BlinkMacSystemFont, sans-serif;
+    --fontSizeBase100: 10px;
+    --fontSizeBase200: 12px;  /* Caption */
+    --fontSizeBase300: 14px;  /* Body */
+    --fontSizeBase400: 16px;  /* Subtitle */
+    --fontSizeBase500: 20px;  /* Title */
+    --fontSizeBase600: 24px;
+    --fontSizeHero700: 28px;  /* Large title */
+    --fontSizeHero800: 32px;
+    --fontWeightRegular: 400;
+    --fontWeightMedium: 500;
+    --fontWeightSemibold: 600;
+    --fontWeightBold: 700;
+    --lineHeightBase300: 20px;
+    --lineHeightBase400: 22px;
+  }
+
+  /* ============================================================
+     RESET + BASE
+     ============================================================ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    font-family: var(--fontFamilyBase);
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground1);
+    background: var(--colorNeutralBackground3);
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+  }
+
+  /* ============================================================
+     OUTLOOK SHELL
+     ============================================================ */
+  .outlook-container { height: 100vh; display: flex; flex-direction: column; }
+
+  /* --- Top header (Outlook blue with mountains) --- */
+  .outlook-header {
+    background: linear-gradient(90deg, rgba(17,94,163,0.85), rgba(15,108,189,0.75)), url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=2000&q=60');
+    background-size: cover;
+    background-position: center;
+    height: 48px;
+    display: flex; align-items: center;
+    padding: 0 var(--spacingHorizontalM);
+    gap: var(--spacingHorizontalL);
+    flex-shrink: 0;
+  }
+  .ol-logo {
+    color: var(--colorNeutralForegroundOnBrand);
+    font-weight: var(--fontWeightSemibold);
+    font-size: var(--fontSizeBase400);
+    padding-left: 40px;
+    letter-spacing: -0.2px;
+  }
+  .ol-search-bar {
+    flex: 1; max-width: 600px; margin: 0 auto;
+    background: rgba(255,255,255,0.95);
+    border: 1px solid transparent;
+    border-radius: var(--borderRadiusMedium);
+    padding: 6px 12px;
+    color: var(--colorNeutralForeground3);
+    font-size: var(--fontSizeBase300);
+    display: flex; align-items: center; gap: var(--spacingHorizontalS);
+    box-shadow: var(--shadow2);
+    transition: all 0.1s ease;
+  }
+  .ol-search-bar:hover {
+    background: #FFFFFF;
+    border-color: var(--colorBrandStroke2);
+  }
+  .ol-search-bar svg {
+    width: 16px; height: 16px;
+    color: var(--colorNeutralForeground3);
+    flex-shrink: 0;
+  }
+  .ol-header-icons {
+    display: flex; align-items: center; gap: 2px;
+    margin-left: auto;
+  }
+  .ol-icon-btn {
+    width: 40px; height: 40px;
+    border-radius: var(--borderRadiusMedium);
+    background: transparent;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--colorNeutralForegroundOnBrand);
+    transition: background 0.1s ease;
+  }
+  .ol-icon-btn svg {
+    width: 20px; height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ol-icon-btn:hover { background: rgba(255,255,255,0.15); }
+  .ol-icon-btn:active { background: rgba(255,255,255,0.25); }
+  .ol-user {
+    display: flex; align-items: center; gap: var(--spacingHorizontalS);
+    color: var(--colorNeutralForegroundOnBrand);
+    font-size: var(--fontSizeBase300);
+    font-weight: var(--fontWeightSemibold);
+    padding: 4px 8px 4px 12px;
+  }
+  .ol-avatar {
+    width: 32px; height: 32px;
+    border-radius: var(--borderRadiusCircular);
+    flex-shrink: 0;
+    background: #8E8CD8;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: var(--fontWeightSemibold);
+    letter-spacing: 0.5px;
+  }
+
+  /* --- Tabs row --- */
+  .ol-tabs-row {
+    background: var(--colorNeutralBackground1);
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+    display: flex; align-items: center;
+    padding: 0 var(--spacingHorizontalM);
+    flex-shrink: 0;
+    height: 40px;
+  }
+  .ol-burger {
+    width: 36px; height: 36px;
+    border: none; background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--colorNeutralForeground1);
+    font-size: 16px;
+    margin-right: var(--spacingHorizontalXS);
+    border-radius: var(--borderRadiusMedium);
+    transition: background 0.1s ease;
+  }
+  .ol-burger:hover { background: var(--colorNeutralBackground1Hover); }
+  .ol-tab {
+    padding: 10px 14px;
+    font-size: var(--fontSizeBase300);
+    cursor: pointer;
+    color: var(--colorNeutralForeground1);
+    position: relative;
+    font-weight: var(--fontWeightRegular);
+    transition: color 0.1s ease;
+  }
+  .ol-tab:hover { color: var(--colorBrandForeground1); }
+  .ol-tab.active { font-weight: var(--fontWeightSemibold); color: var(--colorBrandForeground1); }
+  .ol-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 14px; right: 14px;
+    height: 2px;
+    background: var(--colorBrandStroke1);
+    border-radius: 1px;
+  }
+
+  /* --- Ribbon --- */
+  .outlook-toolbar {
+    background: var(--colorNeutralBackground1);
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+    padding: 6px var(--spacingHorizontalM);
+    display: flex; align-items: center; gap: var(--spacingHorizontalXXS);
+    flex-shrink: 0;
+  }
+  /* Button: subtle appearance (default ribbon buttons) */
+  .tb {
+    padding: 6px 12px;
+    border-radius: var(--borderRadiusMedium);
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground1);
+    display: flex; align-items: center; gap: var(--spacingHorizontalS);
+    transition: background 0.1s ease;
+    height: 32px;
+  }
+  .tb:hover { background: var(--colorNeutralBackground1Hover); }
+  .tb:active { background: var(--colorNeutralBackground1Pressed); }
+  .tb.active {
+    background: var(--colorNeutralBackground1Selected);
+    font-weight: var(--fontWeightSemibold);
+  }
+  .tb.disabled {
+    color: var(--colorNeutralForegroundDisabled);
+    cursor: not-allowed;
+  }
+  .tb.disabled:hover { background: transparent; }
+  .tb-icon {
+    font-size: 16px;
+    color: var(--colorNeutralForeground2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* Button: primary appearance */
+  .tb.primary {
+    background: var(--colorNeutralBackground1);
+    color: var(--colorBrandForeground1);
+    border: 1px solid var(--colorNeutralStroke1);
+    font-weight: var(--fontWeightSemibold);
+    padding: 6px 12px 6px 4px;
+  }
+  .tb.primary:hover {
+    background: var(--colorBrandBackground2);
+    border-color: var(--colorBrandStroke2);
+  }
+  .tb.primary .plus-icon {
+    background: var(--colorBrandBackground);
+    color: var(--colorNeutralForegroundOnBrand);
+    width: 24px; height: 24px;
+    border-radius: var(--borderRadiusMedium);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    font-weight: var(--fontWeightRegular);
+  }
+  .tb-chevron {
+    background: transparent; border: none; cursor: pointer;
+    padding: 0 6px; font-size: 10px;
+    color: var(--colorNeutralForeground2);
+    border-radius: var(--borderRadiusMedium);
+    height: 32px;
+    display: flex; align-items: center;
+    transition: background 0.1s ease;
+  }
+  .tb-chevron:hover { background: var(--colorNeutralBackground1Hover); }
+  .tb-sep {
+    width: 1px; height: 20px;
+    background: var(--colorNeutralStroke2);
+    margin: 0 var(--spacingHorizontalXS);
+  }
+  /* Copilot button */
+  .tb-copilot {
+    width: 32px; height: 32px;
+    background: conic-gradient(from 45deg, #A864FF, #4387F4, #63B6BB, #A864FF);
+    border-radius: var(--borderRadiusCircular);
+    padding: 2px;
+    cursor: pointer;
+    position: relative;
+    margin-left: var(--spacingHorizontalS);
+    border: none;
+  }
+  .tb-copilot::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: var(--colorNeutralBackground1);
+    border-radius: var(--borderRadiusCircular);
+  }
+
+  /* --- Gr33t ribbon button (add-in custom button) --- */
+  .gr33t-ribbon-btn {
+    padding: 4px 12px 4px 6px;
+    border-radius: var(--borderRadiusMedium);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--colorNeutralForeground1);
+    font-size: var(--fontSizeBase300);
+    display: flex; align-items: center; gap: var(--spacingHorizontalS);
+    transition: all 0.1s ease;
+    height: 32px;
+  }
+  .gr33t-ribbon-btn:hover { background: var(--colorNeutralBackground1Hover); }
+  .gr33t-ribbon-btn.active {
+    background: var(--colorNeutralBackground1Selected);
+    font-weight: var(--fontWeightSemibold);
+  }
+  .gr33t-score-badge {
+    background: var(--gr33t-brand);
+    color: var(--colorNeutralForegroundOnBrand);
+    border-radius: var(--borderRadiusCircular);
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: var(--fontWeightSemibold);
+  }
+  .gr33t-logo-mini {
+    font-weight: var(--fontWeightSemibold);
+    letter-spacing: -0.2px;
+  }
+  .gr33t-logo-mini span { color: var(--gr33t-teal); }
+
+  /* ============================================================
+     MAIN LAYOUT
+     ============================================================ */
+  .main-layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* --- Sidebar --- */
+  .outlook-sidebar {
+    width: 224px;
+    background: var(--colorNeutralBackground2);
+    border-right: 1px solid var(--colorNeutralStroke2);
+    padding: var(--spacingHorizontalM);
+    font-size: var(--fontSizeBase200);
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .sidebar-month {
+    font-weight: var(--fontWeightSemibold);
+    font-size: var(--fontSizeBase300);
+    margin-bottom: var(--spacingHorizontalS);
+    color: var(--colorNeutralForeground1);
+  }
+  .mini-cal {
+    display: grid;
+    grid-template-columns: repeat(7,1fr);
+    gap: 2px;
+    text-align: center;
+    font-size: var(--fontSizeBase200);
+    margin-bottom: var(--spacingHorizontalL);
+  }
+  .mini-cal .hd {
+    color: var(--colorNeutralForeground3);
+    font-weight: var(--fontWeightSemibold);
+    padding: 4px 0;
+  }
+  .mini-cal .d {
+    padding: 4px 0;
+    border-radius: var(--borderRadiusCircular);
+    cursor: pointer;
+    color: var(--colorNeutralForeground1);
+    transition: background 0.1s ease;
+  }
+  .mini-cal .d:hover { background: var(--colorNeutralBackground1Hover); }
+  .mini-cal .d.today {
+    background: var(--colorBrandBackground);
+    color: var(--colorNeutralForegroundOnBrand);
+    font-weight: var(--fontWeightSemibold);
+  }
+  .sidebar-section-title {
+    font-weight: var(--fontWeightSemibold);
+    margin-bottom: var(--spacingHorizontalS);
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground1);
+  }
+  .sidebar-cal-item {
+    display: flex; align-items: center; gap: var(--spacingHorizontalS);
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground1);
+    padding: 4px 0;
+  }
+  .sidebar-cal-swatch {
+    width: 12px; height: 12px;
+    background: var(--colorBrandBackground);
+    border-radius: var(--borderRadiusSmall);
+    flex-shrink: 0;
+  }
+
+  /* ============================================================
+     CALENDAR
+     ============================================================ */
+  .calendar-area {
+    flex: 1;
+    background: var(--colorNeutralBackground1);
+    overflow-y: auto;
+    position: relative;
+  }
+  .cal-header {
+    display: flex;
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+    position: sticky; top: 0;
+    background: var(--colorNeutralBackground1);
+    z-index: 10;
+  }
+  .cal-header .tg { width: 56px; min-width: 56px; }
+  .cal-header .dc {
+    flex: 1; text-align: center;
+    padding: var(--spacingHorizontalMNudge) var(--spacingHorizontalXS);
+    border-left: 1px solid var(--colorNeutralStroke3);
+  }
+  .dc .dn {
+    font-size: var(--fontSizeBase500);
+    font-weight: var(--fontWeightSemibold);
+    color: var(--colorNeutralForeground1);
+    line-height: 24px;
+  }
+  .dc .dl {
+    color: var(--colorNeutralForeground3);
+    font-size: var(--fontSizeBase200);
+    font-weight: var(--fontWeightRegular);
+    margin-top: 2px;
+  }
+  .dc.today .dn {
+    background: var(--colorBrandBackground);
+    color: var(--colorNeutralForegroundOnBrand);
+    border-radius: var(--borderRadiusCircular);
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: var(--fontSizeBase400);
+  }
+
+  .cal-body { position: relative; }
+  .cr {
+    display: flex;
+    height: 52px;
+    border-bottom: 1px solid var(--colorNeutralStroke3);
+  }
+  .cr .tg {
+    width: 56px; min-width: 56px;
+    padding: 2px var(--spacingHorizontalS) 0 0;
+    text-align: right;
+    font-size: var(--fontSizeBase200);
+    color: var(--colorNeutralForeground3);
+  }
+  .cr .cc {
+    flex: 1;
+    border-left: 1px solid var(--colorNeutralStroke3);
+    position: relative;
+  }
+
+  /* Calendar events — Fluent style */
+  .ev {
+    position: absolute;
+    left: 4px; right: 4px;
+    border-radius: var(--borderRadiusMedium);
+    padding: 4px 8px;
+    font-size: var(--fontSizeBase200);
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 5;
+    border-left: 3px solid;
+    box-shadow: var(--shadow2);
+    transition: box-shadow 0.1s ease;
+  }
+  .ev:hover { box-shadow: var(--shadow4); }
+  .ev-b {
+    background: #DFF6FE;
+    border-color: #0078D4;
+    color: #004578;
+  }
+  .ev-p {
+    background: #EFDFF4;
+    border-color: #881798;
+    color: #4B0866;
+  }
+  .ev-t {
+    background: #DFF6DD;
+    border-color: #107C10;
+    color: #0B5A08;
+  }
+  .ev-title {
+    font-weight: var(--fontWeightSemibold);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ev-time {
+    font-size: 11px;
+    opacity: 0.85;
+    margin-top: 1px;
+  }
+
+  /* ============================================================
+     TASKPANE — Fluent styled
+     ============================================================ */
+  .gr33t-taskpane {
+    width: 340px;
+    background: var(--colorNeutralBackground1);
+    border-left: 1px solid var(--colorNeutralStroke2);
+    overflow-y: auto;
+    font-size: var(--fontSizeBase300);
+    flex-shrink: 0;
+    transition: width 0.2s cubic-bezier(0.33, 0, 0.67, 1);
+  }
+  .gr33t-taskpane.hidden {
+    width: 0 !important;
+    border-left: none;
+    overflow: hidden;
+  }
+
+  /* --- TP Header --- */
+  .tp-head {
+    padding: var(--spacingHorizontalL) var(--spacingHorizontalL) var(--spacingHorizontalM);
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+  }
+  .tp-head-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacingHorizontalL);
+  }
+  .tp-day-title {
+    font-size: var(--fontSizeBase400);
+    font-weight: var(--fontWeightSemibold);
+    color: var(--colorNeutralForeground1);
+    line-height: 22px;
+  }
+  .tp-close {
+    width: 32px; height: 32px;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: var(--colorNeutralForeground2);
+    border-radius: var(--borderRadiusMedium);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s ease;
+  }
+  .tp-close:hover {
+    background: var(--colorNeutralBackground1Hover);
+    color: var(--colorNeutralForeground1);
+  }
+
+  .tp-score-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacingHorizontalM);
+    margin-bottom: var(--spacingHorizontalM);
+  }
+  .tp-score-pct {
+    font-size: var(--fontSizeHero700);
+    font-weight: var(--fontWeightSemibold);
+    line-height: 1;
+  }
+  .tp-score-pct.good { color: var(--colorStatusSuccessForeground1); }
+  .tp-score-pct.warn { color: var(--colorStatusWarningForeground1); }
+  .tp-score-pct.bad { color: var(--colorStatusDangerForeground1); }
+  .tp-score-pct.future { color: var(--colorNeutralForegroundDisabled); }
+  .tp-score-label {
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground2);
+    line-height: 20px;
+    flex: 1;
+  }
+
+  /* Fluent ProgressBar */
+  .tp-bar {
+    height: 4px;
+    background: var(--colorNeutralBackground5);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .tp-bar .fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .fg { background: var(--colorStatusSuccessForeground1); }
+  .fo { background: var(--colorStatusWarningForeground1); }
+  .fr { background: var(--colorStatusDangerForeground1); }
+  .fb { background: var(--colorBrandBackground); }
+
+  /* --- Week selector (Fluent cards) --- */
+  .tp-week-selector {
+    display: flex;
+    gap: var(--spacingHorizontalXS);
+    padding: var(--spacingHorizontalM) var(--spacingHorizontalL);
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+    background: var(--colorNeutralBackground2);
+  }
+  .tp-ws-day {
+    flex: 1;
+    padding: var(--spacingHorizontalS) 2px;
+    border-radius: var(--borderRadiusMedium);
+    border: 1px solid var(--colorNeutralStroke2);
+    background: var(--colorNeutralBackground1);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.1s ease;
+  }
+  .tp-ws-day:hover {
+    background: var(--colorNeutralBackground1Hover);
+    border-color: var(--colorNeutralStroke1);
+  }
+  .tp-ws-day.active {
+    border-color: var(--colorBrandStroke1);
+    background: var(--colorBrandBackground2);
+  }
+  .tp-ws-day.future { opacity: 0.55; }
+  .ws-label {
+    font-size: var(--fontSizeBase200);
+    font-weight: var(--fontWeightMedium);
+    color: var(--colorNeutralForeground3);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .ws-num {
+    font-size: var(--fontSizeBase400);
+    font-weight: var(--fontWeightSemibold);
+    color: var(--colorNeutralForeground1);
+    line-height: 20px;
+  }
+  .tp-ws-day.active .ws-num { color: var(--colorBrandForeground1); }
+  .ws-score {
+    font-size: var(--fontSizeBase200);
+    font-weight: var(--fontWeightSemibold);
+  }
+  .ws-score.good { color: var(--colorStatusSuccessForeground1); }
+  .ws-score.warn { color: var(--colorStatusWarningForeground1); }
+  .ws-score.bad { color: var(--colorStatusDangerForeground1); }
+  .ws-score.future { color: var(--colorNeutralForegroundDisabled); }
+  .ws-bar {
+    height: 3px;
+    background: var(--colorNeutralBackground5);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 4px var(--spacingHorizontalS) 0;
+  }
+  .ws-bar .fill { height: 100%; border-radius: 2px; }
+
+  /* --- Mini timeline --- */
+  .tp-timeline-wrap {
+    display: flex;
+    padding: var(--spacingHorizontalM) var(--spacingHorizontalS) var(--spacingHorizontalM) 0;
+    border-bottom: 1px solid var(--colorNeutralStroke2);
+  }
+  .tp-tl-hours {
+    width: 32px; flex-shrink: 0;
+    padding: 0 var(--spacingHorizontalXS) 0 var(--spacingHorizontalS);
+    position: relative;
+    height: 300px;
+  }
+  .tp-tl-hours span {
+    position: absolute;
+    font-size: 10px;
+    color: var(--colorNeutralForeground3);
+    text-align: right;
+    line-height: 1;
+    right: var(--spacingHorizontalXS);
+  }
+  .tp-tl-track {
+    flex: 1;
+    position: relative;
+    background: var(--colorNeutralBackground2);
+    border: 1px solid var(--colorNeutralStroke2);
+    border-radius: var(--borderRadiusMedium);
+    height: 300px;
+    overflow: hidden;
+  }
+  .tp-tl-grid-line {
+    position: absolute; left: 0; right: 0;
+    border-top: 1px solid var(--colorNeutralStrokeSubtle);
+    pointer-events: none;
+  }
+  .tp-tl-lunch {
+    position: absolute; left: 0; right: 0;
+    background: repeating-linear-gradient(0deg,
+      transparent, transparent 3px,
+      var(--colorNeutralBackground3) 3px, var(--colorNeutralBackground3) 6px);
+    border-top: 1px dashed var(--colorNeutralStroke2);
+    border-bottom: 1px dashed var(--colorNeutralStroke2);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .tp-tl-lunch-label {
+    position: absolute; right: 4px; top: 1px;
+    font-size: 9px;
+    color: var(--colorNeutralForegroundDisabled);
+    font-style: italic;
+  }
+  .tp-tl-event {
+    position: absolute; left: 4px; right: 4px;
+    border-radius: var(--borderRadiusSmall);
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: var(--fontWeightSemibold);
+    overflow: hidden;
+    z-index: 3;
+    border-left: 3px solid;
+    line-height: 1.2;
+  }
+  .tp-tl-event .ev-t-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tp-tl-event .ev-t-time {
+    font-size: 9px;
+    font-weight: var(--fontWeightRegular);
+    opacity: 0.75;
+  }
+  .tp-tl-ev-b { background: #DFF6FE; border-color: #0078D4; color: #004578; }
+  .tp-tl-ev-p { background: #EFDFF4; border-color: #881798; color: #4B0866; }
+  .tp-tl-ev-t { background: #DFF6DD; border-color: #107C10; color: #0B5A08; }
+
+  /* Overlay zones (hover) */
+  .tp-tl-overlay {
+    position: absolute; inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .tp-tl-overlay.visible { opacity: 1; }
+
+  .tl-zone-deepwork {
+    position: absolute; left: 0; right: 0;
+    background: repeating-linear-gradient(-45deg,
+      transparent, transparent 4px,
+      rgba(15,108,189,0.12) 4px, rgba(15,108,189,0.12) 8px);
+    border-left: 3px solid var(--colorBrandStroke2);
+  }
+  .tl-zone-deepwork-label {
+    position: absolute; left: 8px;
+    font-size: 9px;
+    color: var(--colorBrandForeground1);
+    font-weight: var(--fontWeightSemibold);
+    background: var(--colorBrandBackground2);
+    padding: 1px 5px;
+    border-radius: var(--borderRadiusSmall);
+  }
+  .tl-zone-transition {
+    position: absolute; left: 0; right: 0;
+    background: var(--colorStatusWarningBackground1);
+    border-top: 2px dashed var(--colorStatusWarningForeground1);
+    border-bottom: 1px dashed var(--colorStatusWarningForeground1);
+  }
+  .tl-zone-transition-label {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 9px;
+    color: var(--colorStatusWarningForeground1);
+    font-weight: var(--fontWeightSemibold);
+    background: var(--colorNeutralBackground1);
+    padding: 1px 5px;
+    border-radius: var(--borderRadiusSmall);
+    border: 1px solid var(--colorStatusWarningBorder1);
+    white-space: nowrap;
+  }
+  .tl-zone-multitask {
+    position: absolute; left: 0; right: 0;
+    border: 2px solid var(--colorStatusDangerForeground1);
+    border-radius: var(--borderRadiusSmall);
+    background: var(--colorStatusDangerBackground1);
+  }
+  .tl-zone-multitask-label {
+    position: absolute; right: 4px;
+    font-size: 9px;
+    color: var(--colorStatusDangerForeground1);
+    font-weight: var(--fontWeightSemibold);
+    background: var(--colorNeutralBackground1);
+    padding: 1px 5px;
+    border-radius: var(--borderRadiusSmall);
+    border: 1px solid var(--colorStatusDangerBorder1);
+  }
+  .tl-zone-overtime {
+    position: absolute; left: 0; right: 0;
+    background: var(--colorStatusDangerBackground1);
+    border-left: 3px solid var(--colorStatusDangerBorder1);
+  }
+  .tl-zone-overtime-label {
+    position: absolute; left: 8px;
+    font-size: 9px;
+    color: var(--colorStatusDangerForeground1);
+    font-weight: var(--fontWeightSemibold);
+    background: var(--colorNeutralBackground1);
+    padding: 1px 5px;
+    border-radius: var(--borderRadiusSmall);
+    border: 1px solid var(--colorStatusDangerBorder1);
+  }
+
+  /* --- Factors list --- */
+  .tp-factors { padding: var(--spacingHorizontalS) 0; }
+  .tp-fct {
+    padding: var(--spacingHorizontalM) var(--spacingHorizontalL);
+    border-bottom: 1px solid var(--colorNeutralStroke3);
+    cursor: pointer;
+    transition: background 0.1s ease;
+    border-left: 3px solid transparent;
+  }
+  .tp-fct:last-child { border-bottom: none; }
+  .tp-fct:hover { background: var(--colorNeutralBackground1Hover); }
+  .tp-fct.highlight-multitask {
+    border-left-color: var(--colorStatusDangerForeground1);
+    background: var(--colorStatusDangerBackground1);
+  }
+  .tp-fct.highlight-transitions {
+    border-left-color: var(--colorStatusWarningForeground1);
+    background: var(--colorStatusWarningBackground1);
+  }
+  .tp-fct.highlight-debordement {
+    border-left-color: var(--colorStatusDangerForeground1);
+    background: var(--colorStatusDangerBackground1);
+  }
+  .tp-fct.highlight-deepwork {
+    border-left-color: var(--colorBrandStroke1);
+    background: var(--colorBrandBackground2);
+  }
+
+  .tp-fct-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: var(--spacingHorizontalS);
+    gap: var(--spacingHorizontalM);
+  }
+  .tp-fct-name {
+    font-size: var(--fontSizeBase300);
+    font-weight: var(--fontWeightSemibold);
+    color: var(--colorNeutralForeground1);
+    line-height: 20px;
+  }
+  .tp-fct-summary {
+    font-size: var(--fontSizeBase200);
+    font-weight: var(--fontWeightSemibold);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .tp-fct-summary.good { color: var(--colorStatusSuccessForeground1); }
+  .tp-fct-summary.warn { color: var(--colorStatusWarningForeground1); }
+  .tp-fct-summary.bad { color: var(--colorStatusDangerForeground1); }
+  .tp-fct-summary.neutral { color: var(--colorBrandForeground1); }
+
+  .tp-fct-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0 3px var(--spacingHorizontalM);
+    font-size: var(--fontSizeBase200);
+    color: var(--colorNeutralForeground3);
+  }
+  .tp-fct-row .label { flex: 1; }
+  .tp-fct-row .status {
+    flex-shrink: 0;
+    margin-left: var(--spacingHorizontalS);
+    font-size: var(--fontSizeBase200);
+    font-weight: var(--fontWeightMedium);
+  }
+  .tp-fct-row .status.ok { color: var(--colorStatusSuccessForeground1); }
+  .tp-fct-row .status.nok { color: var(--colorStatusDangerForeground1); }
+  .tp-fct-row .status.alert { color: var(--colorStatusWarningForeground1); }
+  .tp-fct-more {
+    font-size: var(--fontSizeBase200);
+    color: var(--colorBrandForeground1);
+    cursor: pointer;
+    font-weight: var(--fontWeightMedium);
+    padding: 4px 0 0 var(--spacingHorizontalM);
+  }
+  .tp-fct-more:hover { text-decoration: underline; }
+
+  /* --- Actions (Fluent Button outline) --- */
+  .tp-actions {
+    padding: var(--spacingHorizontalM) var(--spacingHorizontalL);
+    border-top: 1px solid var(--colorNeutralStroke2);
+  }
+  .tp-refresh {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacingHorizontalS);
+    width: 100%;
+    padding: 6px var(--spacingHorizontalM);
+    background: var(--colorNeutralBackground1);
+    border: 1px solid var(--colorNeutralStroke1);
+    border-radius: var(--borderRadiusMedium);
+    font-size: var(--fontSizeBase300);
+    color: var(--colorNeutralForeground1);
+    font-weight: var(--fontWeightSemibold);
+    height: 32px;
+    transition: all 0.1s ease;
+  }
+  .tp-refresh:hover {
+    background: var(--colorNeutralBackground1Hover);
+    border-color: var(--colorNeutralStroke1);
+  }
+  .tp-refresh:active { background: var(--colorNeutralBackground1Pressed); }
+
+  /* --- Trend chart --- */
+  .tp-trend {
+    padding: var(--spacingHorizontalM) var(--spacingHorizontalL);
+    border-top: 1px solid var(--colorNeutralStroke2);
+  }
+  .tp-trend h3 {
+    font-size: var(--fontSizeBase300);
+    font-weight: var(--fontWeightSemibold);
+    margin-bottom: var(--spacingHorizontalS);
+    color: var(--colorNeutralForeground1);
+  }
+  .tp-trend-chart {
+    height: 72px;
+    background: var(--colorNeutralBackground2);
+    border-radius: var(--borderRadiusMedium);
+    border: 1px solid var(--colorNeutralStroke2);
+    padding: var(--spacingHorizontalS);
+  }
+  .tp-trend-chart svg { width: 100%; height: 100%; }
+
+  /* --- Footer --- */
+  .tp-foot {
+    padding: var(--spacingHorizontalM) var(--spacingHorizontalL);
+    text-align: center;
+    border-top: 1px solid var(--colorNeutralStroke2);
+    font-size: var(--fontSizeBase200);
+    color: var(--colorNeutralForeground3);
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .tp-nodata {
+    padding: 40px var(--spacingHorizontalXXL);
+    text-align: center;
+    color: var(--colorNeutralForeground3);
+    font-size: var(--fontSizeBase300);
+  }
+  .tp-nodata .icon {
+    font-size: 32px;
+    margin-bottom: var(--spacingHorizontalS);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="outlook-container">
+
+  <!-- TOP HEADER -->
+  <div class="outlook-header">
+    <div class="ol-logo">Outlook</div>
+    <div class="ol-search-bar">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9" cy="9" r="6"/>
+        <path d="m17 17-3.5-3.5"/>
+      </svg>
+      <span>Rechercher</span>
+    </div>
+    <div class="ol-header-icons">
+      <!-- Teams / Chat -->
+      <button class="ol-icon-btn" title="Teams">
+        <svg viewBox="0 0 20 20">
+          <path d="M4 6a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3H8l-3 2.5v-2.5a3 3 0 0 1-1-2.2V6z"/>
+          <path d="M9 6.5h3"/>
+          <path d="M9 9h2"/>
+        </svg>
+      </button>
+      <!-- OneNote -->
+      <button class="ol-icon-btn" title="OneNote">
+        <svg viewBox="0 0 20 20">
+          <rect x="4" y="3" width="11" height="14" rx="1"/>
+          <path d="M7 3v14"/>
+          <path d="M15 7h2"/>
+          <path d="M15 10h2"/>
+          <path d="M15 13h2"/>
+        </svg>
+      </button>
+      <!-- To Do / Tasks -->
+      <button class="ol-icon-btn" title="To Do">
+        <svg viewBox="0 0 20 20">
+          <rect x="3" y="3" width="14" height="14" rx="2"/>
+          <path d="m7 10 2 2 4-4"/>
+        </svg>
+      </button>
+      <!-- Notifications -->
+      <button class="ol-icon-btn" title="Notifications">
+        <svg viewBox="0 0 20 20">
+          <path d="M10 3a5 5 0 0 0-5 5v3l-1.5 2.5h13L15 11V8a5 5 0 0 0-5-5z"/>
+          <path d="M8 16a2 2 0 0 0 4 0"/>
+        </svg>
+      </button>
+      <!-- Settings (gear) -->
+      <button class="ol-icon-btn" title="Paramètres">
+        <svg viewBox="0 0 20 20">
+          <path d="M8.3 2.5h3.4l.5 2.1a6 6 0 0 1 1.6.9l2.1-.7 1.7 2.9-1.6 1.4a6 6 0 0 1 0 1.8l1.6 1.4-1.7 2.9-2.1-.7a6 6 0 0 1-1.6.9l-.5 2.1H8.3l-.5-2.1a6 6 0 0 1-1.6-.9l-2.1.7-1.7-2.9 1.6-1.4a6 6 0 0 1 0-1.8L2.4 7.7l1.7-2.9 2.1.7a6 6 0 0 1 1.6-.9l.5-2.1z"/>
+          <circle cx="10" cy="10" r="2.3"/>
+        </svg>
+      </button>
+      <div class="ol-user">
+        <span>Arnaud Rayrole (G...</span>
+        <div class="ol-avatar">AR</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS ROW -->
+  <div class="ol-tabs-row">
+    <button class="ol-burger">☰</button>
+    <div class="ol-tab active">Accueil</div>
+    <div class="ol-tab">Afficher</div>
+    <div class="ol-tab">Aide</div>
+  </div>
+
+  <!-- RIBBON -->
+  <div class="outlook-toolbar">
+    <button class="tb primary">
+      <span class="plus-icon">+</span>
+      Nouvel évènement
+      <span class="tb-icon" style="font-size:10px;opacity:0.6;margin-left:4px;">▾</span>
+    </button>
+    <button class="tb">
+      <span class="tb-icon">📅</span>Jour
+      <span style="opacity:0.5;font-size:10px;">▾</span>
+    </button>
+    <button class="tb">
+      <span class="tb-icon">📋</span>Semaine de travail
+    </button>
+    <button class="tb active">
+      <span class="tb-icon">▦</span>Semaine
+    </button>
+    <button class="tb">
+      <span class="tb-icon">🗓</span>Mois
+    </button>
+    <button class="tb disabled">
+      <span class="tb-icon">⊞</span>Mode Fractionné
+    </button>
+    <div class="tb-sep"></div>
+    <button class="tb">
+      <span class="tb-icon">⚏</span>Filtre appliqué
+      <span style="opacity:0.5;font-size:10px;">▾</span>
+    </button>
+    <button class="tb">
+      <span class="tb-icon">↗</span>Partager
+    </button>
+    <button class="tb">
+      <span class="tb-icon">🖨</span>Imprimer
+    </button>
+
+    <div style="flex: 1;"></div>
+
+    <!-- Gr33t add-in button -->
+    <button class="gr33t-ribbon-btn active" id="ribbonBtn" title="Ouvrir/fermer le panneau Gr33t" onclick="toggleTaskPane()">
+      <div class="gr33t-score-badge" id="ribbonScore">65</div>
+      <span class="gr33t-logo-mini">Gr<span>33</span>t</span>
+    </button>
+
+    <button class="tb-chevron">▾</button>
+    <div class="tb-copilot" title="Copilot"></div>
+  </div>
+
+  <div class="main-layout">
+
+    <!-- SIDEBAR -->
+    <div class="outlook-sidebar">
+      <div class="sidebar-month">avril 2026</div>
+      <div class="mini-cal">
+        <div class="hd">L</div><div class="hd">M</div><div class="hd">M</div><div class="hd">J</div><div class="hd">V</div><div class="hd">S</div><div class="hd">D</div>
+        <div class="d">30</div><div class="d">31</div><div class="d">1</div><div class="d">2</div><div class="d">3</div><div class="d">4</div><div class="d">5</div>
+        <div class="d">6</div><div class="d">7</div><div class="d today">8</div><div class="d">9</div><div class="d">10</div><div class="d">11</div><div class="d">12</div>
+        <div class="d">13</div><div class="d">14</div><div class="d">15</div><div class="d">16</div><div class="d">17</div><div class="d">18</div><div class="d">19</div>
+        <div class="d">20</div><div class="d">21</div><div class="d">22</div><div class="d">23</div><div class="d">24</div><div class="d">25</div><div class="d">26</div>
+        <div class="d">27</div><div class="d">28</div><div class="d">29</div><div class="d">30</div><div class="d">1</div><div class="d">2</div><div class="d">3</div>
+      </div>
+      <div style="border-top:1px solid var(--colorNeutralStroke2);padding-top:var(--spacingHorizontalM);">
+        <div class="sidebar-section-title">Mes calendriers</div>
+        <div class="sidebar-cal-item">
+          <span class="sidebar-cal-swatch"></span>Calendrier
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="calendar-area">
+      <div class="cal-header">
+        <div class="tg"></div>
+        <div class="dc"><div class="dn">6</div><div class="dl">Lun</div></div>
+        <div class="dc"><div class="dn">7</div><div class="dl">Mar</div></div>
+        <div class="dc today"><div class="dn">8</div><div class="dl">Mer</div></div>
+        <div class="dc"><div class="dn">9</div><div class="dl">Jeu</div></div>
+        <div class="dc"><div class="dn">10</div><div class="dl">Ven</div></div>
+      </div>
+      <div class="cal-body" id="calBody">
+        <div class="cr"><div class="tg">8:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">9:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">10:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">11:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">12:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">13:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">14:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">15:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">16:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">17:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">18:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">19:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+        <div class="cr"><div class="tg">20:00</div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div>
+
+        <!-- EVENTS -->
+        <div class="ev ev-b" style="top:52px;height:46px;" data-col="0"><div class="ev-title">Standup</div><div class="ev-time">9:00 – 9:45</div></div>
+        <div class="ev ev-p" style="top:104px;height:52px;" data-col="0"><div class="ev-title">Comité Produit</div><div class="ev-time">10:00 – 11:00</div></div>
+        <div class="ev ev-t" style="top:312px;height:52px;" data-col="0"><div class="ev-title">Sync Ops</div><div class="ev-time">14:00 – 15:00</div></div>
+
+        <div class="ev ev-b" style="top:52px;height:52px;" data-col="1"><div class="ev-title">Comité Direction</div><div class="ev-time">9:00 – 10:00</div></div>
+        <div class="ev ev-p" style="top:104px;height:26px;" data-col="1"><div class="ev-title">Point Produit</div><div class="ev-time">10:00 – 10:30</div></div>
+        <div class="ev ev-t" style="top:312px;height:52px;" data-col="1"><div class="ev-title">1:1 Manager</div><div class="ev-time">14:00 – 15:00</div></div>
+
+        <div class="ev ev-b" style="top:78px;height:52px;" data-col="2"><div class="ev-title">Sprint Planning</div><div class="ev-time">9:30 – 10:30</div></div>
+        <div class="ev ev-p" style="top:156px;height:52px;" data-col="2"><div class="ev-title">Revue Design</div><div class="ev-time">11:00 – 12:00</div></div>
+        <div class="ev ev-t" style="top:364px;height:52px;" data-col="2"><div class="ev-title">Sync Client</div><div class="ev-time">15:00 – 16:00</div></div>
+
+        <div class="ev ev-b" style="top:104px;height:52px;" data-col="3"><div class="ev-title">All Hands</div><div class="ev-time">10:00 – 11:00</div></div>
+        <div class="ev ev-p" style="top:208px;height:52px;" data-col="3"><div class="ev-title">Workshop RH</div><div class="ev-time">12:00 – 13:00</div></div>
+
+        <div class="ev ev-t" style="top:52px;height:52px;" data-col="4"><div class="ev-title">Démo Sprint</div><div class="ev-time">9:00 – 10:00</div></div>
+        <div class="ev ev-b" style="top:364px;height:52px;" data-col="4"><div class="ev-title">Rétro</div><div class="ev-time">15:00 – 16:00</div></div>
+      </div>
+    </div>
+
+    <!-- TASKPANE -->
+    <div class="gr33t-taskpane" id="taskpane">
+      <div class="tp-head" id="tpHead"></div>
+      <div class="tp-week-selector" id="weekSelector"></div>
+      <div class="tp-timeline-wrap">
+        <div class="tp-tl-hours" id="tlHours"></div>
+        <div class="tp-tl-track" id="tlTrack"></div>
+      </div>
+      <div class="tp-factors" id="tpFactors"></div>
+      <div class="tp-actions">
+        <button class="tp-refresh">↻ Actualiser les données mail</button>
+      </div>
+      <div class="tp-trend">
+        <h3>Tendance — 3 semaines</h3>
+        <div class="tp-trend-chart">
+          <svg viewBox="0 0 260 60">
+            <line x1="15" y1="12" x2="255" y2="12" stroke="var(--colorNeutralStroke2)" stroke-width="0.5" stroke-dasharray="3"/>
+            <line x1="15" y1="30" x2="255" y2="30" stroke="var(--colorNeutralStroke2)" stroke-width="0.5" stroke-dasharray="3"/>
+            <line x1="15" y1="48" x2="255" y2="48" stroke="var(--colorNeutralStroke2)" stroke-width="0.5" stroke-dasharray="3"/>
+            <text x="0" y="14" font-size="5" fill="#616161">100</text>
+            <text x="3" y="32" font-size="5" fill="#616161">50</text>
+            <text x="6" y="50" font-size="5" fill="#616161">0</text>
+            <path d="M20,24 L40,28 L55,22 L70,26 L90,24 L110,30 L130,20 L150,26 L170,24 L190,22 L210,19 L230,17 L248,15"
+                  fill="none" stroke="var(--colorBrandBackground)" stroke-width="1.5"/>
+            <path d="M20,24 L40,28 L55,22 L70,26 L90,24 L110,30 L130,20 L150,26 L170,24 L190,22 L210,19 L230,17 L248,15 L248,52 L20,52 Z"
+                  fill="var(--colorBrandBackground)" opacity="0.08"/>
+            <circle cx="248" cy="15" r="2.5" fill="var(--colorBrandBackground)"/>
+            <text x="238" y="11" font-size="5" fill="var(--colorBrandBackground)" font-weight="bold">72</text>
+            <text x="20" y="57" font-size="4" fill="#616161">16/3</text>
+            <text x="90" y="57" font-size="4" fill="#616161">23/3</text>
+            <text x="165" y="57" font-size="4" fill="#616161">30/3</text>
+            <text x="238" y="57" font-size="4" fill="#616161">7/4</text>
+          </svg>
+        </div>
+      </div>
+      <div class="tp-foot">Ces indicateurs sont définis dans le cadre de la politique QVCT de l'entreprise.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+const dayData = [
+  {
+    day: 'Lundi 6 avril', score: 65, scoreLabel: 'Suivi modéré des facteurs de récupération',
+    factors: [
+      { name: 'Multi-tâche', summary: '0/2 réunions', summaryClass: 'bad',
+        rows: [
+          { label: '10:00–11:00 Comité Produit', status: '1 mail', statusClass: 'nok' },
+          { label: '14:00–15:00 Sync Ops', status: '0', statusClass: 'ok' },
+        ], more: null },
+      { name: 'Transitions', summary: '1/2 réunions', summaryClass: 'warn',
+        rows: [
+          { label: '9:45 → 10:00 Comité Produit', status: '15 min', statusClass: 'alert' },
+          { label: '11:00 → 14:00 Sync Ops', status: 'ok', statusClass: 'ok' },
+        ], more: null },
+      { name: 'Débordement', summary: '1 mail hors plage', summaryClass: 'bad',
+        rows: [
+          { label: 'Mail envoyé à 21:15', status: '⚠', statusClass: 'alert' },
+        ], more: null },
+      { name: 'Plage de travail profond', summary: '3 blocs · 6h15', summaryClass: 'neutral',
+        rows: [
+          { label: '08:00–09:00 (60 min)', status: '✓', statusClass: 'ok' },
+          { label: '11:00–14:00 (150 min)', status: '✓', statusClass: 'ok' },
+        ], more: '+ 1 autre...' },
+    ]
+  },
+  {
+    day: 'Mardi 7 avril', score: 72, scoreLabel: 'Suivi modéré des facteurs de récupération',
+    factors: [
+      { name: 'Multi-tâche', summary: '1/3 réunions', summaryClass: 'warn',
+        rows: [
+          { label: '9:00–10:00 Comité Direction', status: '0', statusClass: 'ok' },
+          { label: '10:00–10:30 Point Produit', status: '2 mails', statusClass: 'nok' },
+        ], more: '+ 1 autre...' },
+      { name: 'Transitions', summary: '2/3 réunions', summaryClass: 'warn',
+        rows: [
+          { label: '10:00 → 10:00 Point Produit', status: '0 min', statusClass: 'nok' },
+          { label: '10:30 → 14:00 1:1 Manager', status: 'ok', statusClass: 'ok' },
+        ], more: null },
+      { name: 'Débordement', summary: '0 mail hors plage', summaryClass: 'good',
+        rows: [
+          { label: 'Aucune activité hors 8h-20h', status: '✓', statusClass: 'ok' },
+        ], more: null },
+      { name: 'Plage de travail profond', summary: '4 blocs · 8h18', summaryClass: 'neutral',
+        rows: [
+          { label: '08:00–09:00 (60 min)', status: '✓', statusClass: 'ok' },
+          { label: '10:30–14:00 (150 min)', status: '✓', statusClass: 'ok' },
+        ], more: '+ 2 autres...' },
+    ]
+  },
+  { day: 'Mercredi 8 avril', score: null, scoreLabel: null, factors: null },
+  { day: 'Jeudi 9 avril', score: null, scoreLabel: null, factors: null },
+  { day: 'Vendredi 10 avril', score: null, scoreLabel: null, factors: null },
+];
+
+const tlData = [
+  {
+    events: [
+      { start: 9, end: 9.75, name: 'Standup', cls: 'tp-tl-ev-b' },
+      { start: 10, end: 11, name: 'Comité Produit', cls: 'tp-tl-ev-p' },
+      { start: 14, end: 15, name: 'Sync Ops', cls: 'tp-tl-ev-t' },
+    ],
+    overlays: {
+      multitask: [{ start: 10, end: 11, label: '1 mail' }],
+      transitions: [{ start: 9.75, end: 10, label: '15 min' }],
+      debordement: [{ start: 20, end: 21.25, label: 'Mail 21:15' }],
+      deepwork: [
+        { start: 8, end: 9, label: '1h' },
+        { start: 11, end: 12.5, label: '1h30' },
+        { start: 13.5, end: 14, label: '30 min' },
+        { start: 15, end: 20, label: '5h' },
+      ],
+    }
+  },
+  {
+    events: [
+      { start: 9, end: 10, name: 'Comité Direction', cls: 'tp-tl-ev-b' },
+      { start: 10, end: 10.5, name: 'Point Produit', cls: 'tp-tl-ev-p' },
+      { start: 14, end: 15, name: '1:1 Manager', cls: 'tp-tl-ev-t' },
+    ],
+    overlays: {
+      multitask: [{ start: 10, end: 10.5, label: '2 mails' }],
+      transitions: [{ start: 10, end: 10, label: '0 min' }],
+      debordement: [],
+      deepwork: [
+        { start: 8, end: 9, label: '1h' },
+        { start: 10.5, end: 12.5, label: '2h' },
+        { start: 13.5, end: 14, label: '30 min' },
+        { start: 15, end: 20, label: '5h' },
+      ],
+    }
+  },
+  null, null, null
+];
+
+const TL_START = 8;
+const TL_END = 21;
+const TL_HEIGHT = 300;
+const TL_HOURS = TL_END - TL_START;
+
+function hourToY(h) { return ((h - TL_START) / TL_HOURS) * TL_HEIGHT; }
+function durationToH(f, t) { return hourToY(t) - hourToY(f); }
+function scoreColor(s) { if (s === null) return 'future'; if (s >= 80) return 'good'; if (s >= 50) return 'warn'; return 'bad'; }
+function fillClass(s) { if (s === null) return ''; if (s >= 80) return 'fg'; if (s >= 50) return 'fo'; return 'fr'; }
+
+let selectedDay = 0;
+let taskPaneOpen = true;
+
+function positionEvents() {
+  const body = document.getElementById('calBody');
+  const firstRow = body.querySelector('.cr');
+  if (!firstRow) return;
+  const cells = firstRow.querySelectorAll('.cc');
+  const bodyRect = body.getBoundingClientRect();
+  body.querySelectorAll('.ev').forEach(item => {
+    const col = parseInt(item.getAttribute('data-col'));
+    if (col >= cells.length) return;
+    const r = cells[col].getBoundingClientRect();
+    item.style.left = (r.left - bodyRect.left + 4) + 'px';
+    item.style.width = (r.width - 8) + 'px';
+  });
+}
+
+function renderWeekSelector(dayIdx) {
+  const ws = document.getElementById('weekSelector');
+  const days = [
+    { label: 'Lun', num: '6' }, { label: 'Mar', num: '7' }, { label: 'Mer', num: '8' },
+    { label: 'Jeu', num: '9' }, { label: 'Ven', num: '10' },
+  ];
+  let html = '';
+  days.forEach((dy, i) => {
+    const dd = dayData[i];
+    const isActive = i === dayIdx;
+    const isFuture = dd.score === null;
+    const cls = scoreColor(dd.score);
+    const fc = fillClass(dd.score);
+    const scoreText = dd.score !== null ? dd.score + '%' : '—';
+    html += `<div class="tp-ws-day${isActive ? ' active' : ''}${isFuture ? ' future' : ''}" onclick="selectDay(${i})">
+      <div class="ws-label">${dy.label}</div>
+      <div class="ws-num">${dy.num}</div>
+      <div class="ws-score ${cls}">${scoreText}</div>
+      <div class="ws-bar"><div class="fill ${fc}" style="width:${dd.score || 0}%;"></div></div>
+    </div>`;
+  });
+  ws.innerHTML = html;
+}
+
+function fmtH(h) {
+  const hr = Math.floor(h);
+  const mn = Math.round((h - hr) * 60);
+  return hr + ':' + (mn < 10 ? '0' : '') + mn;
+}
+
+function renderTimeline(dayIdx) {
+  const hours = document.getElementById('tlHours');
+  const track = document.getElementById('tlTrack');
+
+  let hhtml = '';
+  for (let h = TL_START; h <= TL_END; h++) {
+    hhtml += `<span style="top:${hourToY(h) - 4}px;">${h}h</span>`;
+  }
+  hours.innerHTML = hhtml;
+
+  const tl = tlData[dayIdx];
+  if (!tl) {
+    track.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--colorNeutralForegroundDisabled);font-size:12px;">Pas de données</div>';
+    return;
+  }
+
+  let html = '';
+  for (let h = TL_START + 1; h < TL_END; h++) {
+    html += `<div class="tp-tl-grid-line" style="top:${hourToY(h)}px;"></div>`;
+  }
+  html += `<div class="tp-tl-lunch" style="top:${hourToY(12.5)}px;height:${durationToH(12.5,13.5)}px;"><span class="tp-tl-lunch-label">pause</span></div>`;
+
+  tl.events.forEach(ev => {
+    const top = hourToY(ev.start);
+    const h = durationToH(ev.start, ev.end);
+    html += `<div class="tp-tl-event ${ev.cls}" style="top:${top}px;height:${h}px;">
+      <div class="ev-t-name">${ev.name}</div>
+      ${h > 20 ? `<div class="ev-t-time">${fmtH(ev.start)} – ${fmtH(ev.end)}</div>` : ''}
+    </div>`;
+  });
+
+  const types = ['multitask','transitions','debordement','deepwork'];
+  types.forEach(type => {
+    html += `<div class="tp-tl-overlay" id="tl-ov-${type}">`;
+    tl.overlays[type].forEach(z => {
+      const top = hourToY(z.start);
+      const h = Math.max(durationToH(z.start, z.end), 6);
+      if (type === 'deepwork') {
+        html += `<div class="tl-zone-deepwork" style="top:${top}px;height:${h}px;"></div>`;
+        html += `<div class="tl-zone-deepwork-label" style="top:${top + 2}px;">${z.label}</div>`;
+      } else if (type === 'transitions') {
+        html += `<div class="tl-zone-transition" style="top:${top}px;height:${Math.max(h, 12)}px;"></div>`;
+        html += `<div class="tl-zone-transition-label" style="top:${top + 1}px;">${z.label}</div>`;
+      } else if (type === 'multitask') {
+        html += `<div class="tl-zone-multitask" style="top:${top}px;height:${h}px;"></div>`;
+        html += `<div class="tl-zone-multitask-label" style="top:${top + 2}px;">${z.label}</div>`;
+      } else if (type === 'debordement') {
+        html += `<div class="tl-zone-overtime" style="top:${top}px;height:${h}px;"></div>`;
+        html += `<div class="tl-zone-overtime-label" style="top:${top + Math.max(h-14, 2)}px;">${z.label}</div>`;
+      }
+    });
+    html += '</div>';
+  });
+  track.innerHTML = html;
+}
+
+function renderTaskPane(dayIdx) {
+  const d = dayData[dayIdx];
+  const head = document.getElementById('tpHead');
+  const fcts = document.getElementById('tpFactors');
+
+  renderWeekSelector(dayIdx);
+
+  if (d.score === null) {
+    head.innerHTML = `
+      <div class="tp-head-top"><div class="tp-day-title">${d.day}</div><button class="tp-close" onclick="closeTaskPane()">✕</button></div>
+      <div class="tp-score-row"><div class="tp-score-pct future">—</div><div class="tp-score-label">Données disponibles demain</div></div>
+      <div class="tp-bar"><div class="fill" style="width:0%;"></div></div>`;
+    fcts.innerHTML = '<div class="tp-nodata"><div class="icon">📊</div>Les indicateurs seront calculés<br>à la fin de la journée.</div>';
+    renderTimeline(dayIdx);
+    return;
+  }
+
+  const cls = scoreColor(d.score);
+  const fc = fillClass(d.score);
+  head.innerHTML = `
+    <div class="tp-head-top"><div class="tp-day-title">${d.day}</div><button class="tp-close" onclick="closeTaskPane()">✕</button></div>
+    <div class="tp-score-row"><div class="tp-score-pct ${cls}">${d.score}%</div><div class="tp-score-label">${d.scoreLabel}</div></div>
+    <div class="tp-bar"><div class="fill ${fc}" style="width:${d.score}%;"></div></div>`;
+
+  const factorTypes = ['multitask','transitions','debordement','deepwork'];
+  let html = '';
+  d.factors.forEach((f, i) => {
+    const ft = factorTypes[i];
+    html += `<div class="tp-fct" data-factor="${ft}"
+      onmouseenter="highlightTimeline('${ft}', true)"
+      onmouseleave="highlightTimeline('${ft}', false)">
+      <div class="tp-fct-head">
+        <div class="tp-fct-name">${f.name}</div>
+        <div class="tp-fct-summary ${f.summaryClass}">${f.summary}</div>
+      </div>
+      <div class="tp-fct-detail">`;
+    f.rows.forEach(r => {
+      html += `<div class="tp-fct-row"><span class="label">${r.label}</span><span class="status ${r.statusClass}">${r.status}</span></div>`;
+    });
+    if (f.more) html += `<div class="tp-fct-more">${f.more}</div>`;
+    html += `</div></div>`;
+  });
+  fcts.innerHTML = html;
+  renderTimeline(dayIdx);
+}
+
+function highlightTimeline(type, show) {
+  const ov = document.getElementById('tl-ov-' + type);
+  if (ov) ov.classList.toggle('visible', show);
+  const hlClass = 'highlight-' + type;
+  document.querySelectorAll('.tp-fct').forEach(el => {
+    if (el.getAttribute('data-factor') === type) el.classList.toggle(hlClass, show);
+  });
+}
+
+function selectDay(idx) {
+  selectedDay = idx;
+  const d = dayData[idx];
+  document.getElementById('ribbonScore').textContent = d.score !== null ? d.score : '—';
+  renderTaskPane(idx);
+}
+
+function closeTaskPane() {
+  taskPaneOpen = false;
+  document.getElementById('taskpane').classList.add('hidden');
+  document.getElementById('ribbonBtn').classList.remove('active');
+}
+
+function toggleTaskPane() {
+  taskPaneOpen = !taskPaneOpen;
+  document.getElementById('taskpane').classList.toggle('hidden', !taskPaneOpen);
+  document.getElementById('ribbonBtn').classList.toggle('active', taskPaneOpen);
+}
+
+window.addEventListener('load', () => {
+  selectDay(0);
+  positionEvents();
+  window.addEventListener('resize', positionEvents);
+});
+</script>
+
+</body>
+</html>
