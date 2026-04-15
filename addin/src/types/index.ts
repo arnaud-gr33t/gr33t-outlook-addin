@@ -65,6 +65,9 @@ export interface DayScore {
 /** Variante de couleur d'un événement dans la mini-timeline. */
 export type EventVariant = "blue" | "purple" | "teal";
 
+/** Teinte de bordure gauche pour signaler un état de conformité. */
+export type BorderTone = "good" | "warn" | "bad";
+
 /** Un événement de calendrier positionné sur la timeline. */
 export interface TimelineEvent {
   /** Heure de début en décimal, ex: 9 pour 9h00, 9.75 pour 9h45. */
@@ -73,8 +76,10 @@ export interface TimelineEvent {
   end: number;
   /** Nom affiché de l'événement. */
   name: string;
-  /** Variante de couleur. */
+  /** Variante de couleur (fond + texte). */
   variant: EventVariant;
+  /** Si défini, surcharge la couleur de bordure gauche selon un état de conformité. */
+  borderTone?: BorderTone;
 }
 
 /** Une zone d'overlay positionnée sur la timeline (zone de travail profond, alerte transition, etc.). */

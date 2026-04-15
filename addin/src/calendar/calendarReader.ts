@@ -5,7 +5,12 @@
  * Cible : le TaskPane. Le script demo-calendar.ts a déjà écrit les événements
  * (score all-day avec openTypeExtension, focus blocks, overtime).
  */
-import type { DayRecoveryData, FocusBlock, OvertimeEvent } from "./types";
+import type {
+  DayRecoveryData,
+  FocusBlock,
+  MeetingInfo,
+  OvertimeEvent,
+} from "./types";
 import { RECOVERY_EXTENSION_NAME } from "./graphClient";
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
@@ -86,6 +91,9 @@ function rehydrateRecoveryPayload(raw: string): DayRecoveryData {
     ...parsed,
     focusBlocks: hydrate(parsed.focusBlocks as unknown as FocusBlock[]),
     overtimeEvents: hydrate(parsed.overtimeEvents as unknown as OvertimeEvent[]),
+    meetings: parsed.meetings
+      ? hydrate(parsed.meetings as unknown as MeetingInfo[])
+      : [],
   };
 }
 

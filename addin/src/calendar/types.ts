@@ -40,6 +40,21 @@ export interface OvertimeEvent {
   type: "mail" | "meeting";
 }
 
+/**
+ * Informations d'une réunion suivie par Gr33t (après filtrage).
+ * Utilisé pour rendre la réunion dans la timeline du TaskPane avec
+ * une bordure colorée selon le respect des facteurs Multi-tâche et Transition.
+ */
+export interface MeetingInfo {
+  subject: string;
+  start: Date;
+  end: Date;
+  /** Aucun mail envoyé pendant la réunion. */
+  multitaskOk: boolean;
+  /** Gap >= 5 min avant le début (true par défaut pour la 1ère réunion du jour). */
+  transitionBeforeOk: boolean;
+}
+
 // ============================================================
 // Données de récupération d'une journée
 // ============================================================
@@ -52,6 +67,8 @@ export interface DayRecoveryData {
   factors: Factor[];
   focusBlocks: FocusBlock[];
   overtimeEvents: OvertimeEvent[];
+  /** Réunions suivies (filtrées). Optionnel pour compat avec anciens payloads. */
+  meetings?: MeetingInfo[];
 }
 
 // ============================================================

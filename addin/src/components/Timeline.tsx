@@ -285,14 +285,30 @@ const Timeline: React.FC<TimelineProps> = ({ timeline, hoveredFactor }) => {
               const top = hourToY(ev.start);
               const height = durationToH(ev.start, ev.end);
               const variantClass = eventVariantClass[ev.variant] ?? "";
+              // Surcharge éventuelle de la couleur de bordure gauche
+              // selon la conformité aux facteurs Multi-tâche / Transition.
+              const borderOverride = ev.borderTone
+                ? {
+                    borderLeftColor:
+                      ev.borderTone === "good"
+                        ? tokens.colorStatusSuccessForeground1
+                        : ev.borderTone === "warn"
+                        ? tokens.colorStatusWarningForeground1
+                        : tokens.colorStatusDangerForeground1,
+                  }
+                : undefined;
               return (
                 <div
                   key={`ev-${i}`}
                   className={`${styles.event} ${variantClass}`}
-                  style={{ top: `${top}px`, height: `${height}px` }}
+                  style={{
+                    top: `${top}px`,
+                    height: `${height}px`,
+                    ...borderOverride,
+                  }}
                 >
-                  <div className={styles.evName}>{ev.name}</div>
-                  {height > 20 && (
+                  {ev.name && <div className={styles.evName}>{ev.name}</div>}
+                  {height > 20 && ev.name && (
                     <div className={styles.evTime}>
                       {fmtH(ev.start)} – {fmtH(ev.end)}
                     </div>

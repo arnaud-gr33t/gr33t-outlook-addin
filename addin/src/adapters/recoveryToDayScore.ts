@@ -9,9 +9,11 @@ import type {
   Factor as RecoveryFactor,
   FactorRow as RecoveryFactorRow,
   FocusBlock,
+  MeetingInfo,
   OvertimeEvent,
 } from "../calendar/types";
 import type {
+  BorderTone,
   DayScore,
   Factor,
   FactorRow,
@@ -69,11 +71,20 @@ function toDecimalHour(d: Date): number {
   return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
 }
 
+/**
+ * Seuil en minutes en-dessous duquel on n'affiche aucun label :
+ * les blocs trop courts ne laissent pas assez de place pour du texte.
+ */
+const FOCUS_LABEL_MIN_DURATION = 30;
+
 function focusToTimelineEvent(block: FocusBlock): TimelineEvent {
   return {
     start: toDecimalHour(block.start),
     end: toDecimalHour(block.end),
-    name: `Focus (${block.label})`,
+    name:
+      block.durationMin >= FOCUS_LABEL_MIN_DURATION
+        ? `Focus (${block.label})`
+        : "",
     variant: "teal",
   };
 }
@@ -84,6 +95,24 @@ function overtimeToTimelineEvent(event: OvertimeEvent): TimelineEvent {
     end: toDecimalHour(event.end),
     name: event.label,
     variant: "purple",
+  };
+}
+
+/** Couleur de bordure gauche selon le respect combiné des 2 facteurs. */
+function meetingBorderTone(m: MeetingInfo): BorderTone {
+  const okCount = (m.multitaskOk ? 1 : 0) + (m.transitionBeforeOk ? 1 : 0);
+  if (okCount === 2) return "good";
+  if (okCount === 1) return "warn";
+  return "bad";
+}
+
+function meetingToTimelineEvent(m: MeetingInfo): TimelineEvent {
+  return {
+    start: toDecimalHour(m.start),
+    end: toDecimalHour(m.end),
+    name: m.subject,
+    variant: "blue",
+    borderTone: meetingBorderTone(m),
   };
 }
 
@@ -116,6 +145,7 @@ export function recoveryToDayScore(
   const events: TimelineEvent[] = [
     ...data.focusBlocks.map(focusToTimelineEvent),
     ...data.overtimeEvents.map(overtimeToTimelineEvent),
+    ...(data.meetings ?? []).map(meetingToTimelineEvent),
   ].sort((a, b) => a.start - b.start);
 
   const timeline: TimelineData = {

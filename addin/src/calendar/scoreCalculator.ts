@@ -13,6 +13,7 @@ import type {
   FocusBlock,
   OvertimeEvent,
   DayRecoveryData,
+  MeetingInfo,
 } from "./types";
 
 // ============================================================
@@ -480,6 +481,10 @@ export function calculateDayRecovery(
 
   const d = new Date(date);
 
+  // Construit la liste des réunions avec leurs flags multi-tâche / transition,
+  // destinée au rendu bordure colorée dans la timeline du TaskPane.
+  const meetings: MeetingInfo[] = buildMeetingInfos(mt.trackedMeetings);
+
   return {
     date,
     dayLabel: formatDate(d),
@@ -488,5 +493,33 @@ export function calculateDayRecovery(
     factors: [mt.factor, tr.factor, ot.factor, dw.factor],
     focusBlocks: dw.focusBlocks,
     overtimeEvents: ot.overtimeEvents,
+    meetings,
   };
+}
+
+/**
+ * Construit les MeetingInfo à partir des TrackedMeeting (qui portent déjà
+ * mailsDuring) en recalculant le gap avant chaque réunion. La 1ère réunion
+ * du jour est considérée transitionBeforeOk = true (pas de "avant").
+ */
+function buildMeetingInfos(tracked: TrackedMeeting[]): MeetingInfo[] {
+  if (tracked.length === 0) return [];
+  const sorted = [...tracked].sort(
+    (a, b) => a.start.getTime() - b.start.getTime()
+  );
+  return sorted.map((m, i) => {
+    let transitionBeforeOk = true;
+    if (i > 0) {
+      const prevEnd = sorted[i - 1].end;
+      const gapBefore = (m.start.getTime() - prevEnd.getTime()) / 60000;
+      transitionBeforeOk = gapBefore >= TRANSITION_MIN_GAP;
+    }
+    return {
+      subject: m.subject,
+      start: m.start,
+      end: m.end,
+      multitaskOk: m.mailsDuring === 0,
+      transitionBeforeOk,
+    };
+  });
 }
