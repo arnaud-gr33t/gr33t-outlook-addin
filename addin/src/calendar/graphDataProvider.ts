@@ -12,6 +12,14 @@ import type {
 } from "./types";
 import { calculateDayRecovery } from "./scoreCalculator";
 
+/**
+ * Fuseau horaire utilisé pour toutes les requêtes Graph.
+ * Le header `Prefer: outlook.timezone` force Graph à renvoyer les dateTimes
+ * dans ce fuseau (au lieu du fuseau de création de chaque événement),
+ * ce qui évite les décalages quand scoreCalculator fait new Date(dateTime).
+ */
+const DEFAULT_TIMEZONE = "Europe/Paris";
+
 export class GraphDataProvider implements DataProvider {
   private client: Client;
   private userEmail: string;
@@ -32,6 +40,7 @@ export class GraphDataProvider implements DataProvider {
 
     const response = await this.client
       .api("/me/calendar/events")
+      .header("Prefer", `outlook.timezone="${DEFAULT_TIMEZONE}"`)
       .filter(
         `start/dateTime ge '${startOfDay}' and end/dateTime le '${endOfDay}'`
       )
@@ -53,6 +62,7 @@ export class GraphDataProvider implements DataProvider {
 
     const response = await this.client
       .api("/me/mailFolders/sentItems/messages")
+      .header("Prefer", `outlook.timezone="${DEFAULT_TIMEZONE}"`)
       .filter(
         `sentDateTime ge ${startOfDay} and sentDateTime lt ${endOfDay}`
       )
