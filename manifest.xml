@@ -7,7 +7,7 @@
   xsi:type="MailApp">
 
   <Id>7b3d7e1a-4f1e-4c2a-9d8f-1e5a2c3b4d5e</Id>
-  <Version>1.0.7.0</Version>
+  <Version>1.0.8.0</Version>
   <ProviderName>Gr33t</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="Gr33t Recovery Layer" />
