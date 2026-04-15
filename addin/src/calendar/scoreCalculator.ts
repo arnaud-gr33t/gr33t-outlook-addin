@@ -395,7 +395,7 @@ function calculateDeepWork(
     for (const bp of rangesBusy) {
       const bpStart = Math.max(bp.start.getTime(), rangeStart.getTime());
       if (bpStart > cursor) {
-        const gapMin = (bpStart - cursor) / 60000;
+        const gapMin = Math.round((bpStart - cursor) / 60000);
         if (gapMin >= FOCUS_MIN_DURATION) {
           const blockStart = new Date(cursor);
           const blockEnd = new Date(bpStart);
@@ -412,7 +412,7 @@ function calculateDeepWork(
 
     // Check remaining gap at end of range
     if (cursor < rangeEnd.getTime()) {
-      const gapMin = (rangeEnd.getTime() - cursor) / 60000;
+      const gapMin = Math.round((rangeEnd.getTime() - cursor) / 60000);
       if (gapMin >= FOCUS_MIN_DURATION) {
         focusBlocks.push({
           start: new Date(cursor),
