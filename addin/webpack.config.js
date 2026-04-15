@@ -20,10 +20,14 @@ module.exports = async (env, options) => {
       polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
       taskpane: ["./src/taskpane/index.tsx", "./src/taskpane/taskpane.html"],
       commands: "./src/commands/commands.html",
+      auth: ["./src/auth/auth.ts", "./src/auth/auth.html"],
     },
     output: {
       clean: true,
       path: path.resolve(__dirname, "dist"),
+      // Cache-busting : nom de fichier avec content hash en prod uniquement.
+      // En dev on garde des noms stables pour le hot reload.
+      filename: dev ? "[name].js" : "[name].[contenthash:8].js",
     },
     resolve: {
       extensions: [".ts", ".tsx", ".html", ".js"],
@@ -65,6 +69,11 @@ module.exports = async (env, options) => {
         filename: "commands.html",
         template: "./src/commands/commands.html",
         chunks: ["commands"],
+      }),
+      new HtmlWebpackPlugin({
+        filename: "auth.html",
+        template: "./src/auth/auth.html",
+        chunks: ["polyfill", "auth"],
       }),
       new CopyWebpackPlugin({
         patterns: [

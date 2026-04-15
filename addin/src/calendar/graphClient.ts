@@ -6,8 +6,29 @@ import { Client } from "@microsoft/microsoft-graph-client";
 import type { ScoreData, FocusBlock, OvertimeEvent } from "./demoData";
 import { toDateTimeStr, toDayStr, nextDayStr, TIMEZONE } from "./demoData";
 import { generateScoreHtml } from "./htmlBody";
+import type { DayRecoveryData } from "./types";
 
 const CALENDAR_NAME = "Gr33t Recovery";
+
+/** Nom de l'openTypeExtension utilisée pour stocker le DayRecoveryData sur un score event. */
+export const RECOVERY_EXTENSION_NAME = "com.gr33t.recovery";
+
+/**
+ * Formate une Date en chaîne locale "YYYY-MM-DDTHH:mm:ss" pour Graph API
+ * (à utiliser conjointement avec un timeZone explicite).
+ */
+function toGraphDateTime(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+/**
+ * Formate une Date en chaîne locale "YYYY-MM-DDT00:00:00" (minuit local).
+ */
+function toGraphDateMidnight(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
+}
 
 export function createGraphClient(accessToken: string): Client {
   return Client.init({
@@ -69,31 +90,57 @@ export async function clearCalendarEvents(client: Client, calendarId: string): P
 export async function createScoreEvent(
   client: Client,
   calendarId: string,
-  data: ScoreData
+  data: ScoreData,
+  dateOverride?: { start: Date; end: Date },
+  recoveryPayload?: DayRecoveryData
 ): Promise<void> {
   const subject = `⚡ ${data.score}% de suivi des facteurs de récupération`;
   const bodyHtml = generateScoreHtml(data);
 
-  await client.api(`/me/calendars/${calendarId}/events`).post({
+  const startStr = dateOverride
+    ? toGraphDateMidnight(dateOverride.start)
+    : toDayStr(data.dayOffset);
+  const endStr = dateOverride
+    ? toGraphDateMidnight(dateOverride.end)
+    : nextDayStr(data.dayOffset);
+
+  const eventBody: Record<string, unknown> = {
     subject,
     body: {
       contentType: "html",
       content: bodyHtml,
     },
     start: {
-      dateTime: toDayStr(data.dayOffset),
+      dateTime: startStr,
       timeZone: TIMEZONE,
     },
     end: {
-      dateTime: nextDayStr(data.dayOffset),
+      dateTime: endStr,
       timeZone: TIMEZONE,
     },
     isAllDay: true,
     showAs: "free",
     isReminderOn: false,
-  });
+  };
 
-  console.log(`  ⚡ Score ${data.day}: ${data.score}%`);
+  // Attache le DayRecoveryData structuré en openTypeExtension pour que le TaskPane
+  // puisse le relire sans parser le HTML du body.
+  if (recoveryPayload) {
+    eventBody.extensions = [
+      {
+        "@odata.type": "microsoft.graph.openTypeExtension",
+        extensionName: RECOVERY_EXTENSION_NAME,
+        schemaVersion: 1,
+        payload: JSON.stringify(recoveryPayload),
+      },
+    ];
+  }
+
+  await client.api(`/me/calendars/${calendarId}/events`).post(eventBody);
+
+  console.log(
+    `  ⚡ Score ${data.day}: ${data.score}%${recoveryPayload ? " (+ext)" : ""}`
+  );
 }
 
 /**
@@ -102,8 +149,16 @@ export async function createScoreEvent(
 export async function createFocusEvent(
   client: Client,
   calendarId: string,
-  block: FocusBlock
+  block: FocusBlock,
+  dateOverride?: { start: Date; end: Date }
 ): Promise<void> {
+  const startStr = dateOverride
+    ? toGraphDateTime(dateOverride.start)
+    : toDateTimeStr(block.dayOffset, block.start);
+  const endStr = dateOverride
+    ? toGraphDateTime(dateOverride.end)
+    : toDateTimeStr(block.dayOffset, block.end);
+
   await client.api(`/me/calendars/${calendarId}/events`).post({
     subject: `🎯 Focus (${block.label})`,
     body: {
@@ -111,11 +166,11 @@ export async function createFocusEvent(
       content: `Plage de travail profond disponible : ${block.label} sans réunion ni mail envoyé.`,
     },
     start: {
-      dateTime: toDateTimeStr(block.dayOffset, block.start),
+      dateTime: startStr,
       timeZone: TIMEZONE,
     },
     end: {
-      dateTime: toDateTimeStr(block.dayOffset, block.end),
+      dateTime: endStr,
       timeZone: TIMEZONE,
     },
     showAs: "tentative",
@@ -131,8 +186,16 @@ export async function createFocusEvent(
 export async function createOvertimeEvent(
   client: Client,
   calendarId: string,
-  event: OvertimeEvent
+  event: OvertimeEvent,
+  dateOverride?: { start: Date; end: Date }
 ): Promise<void> {
+  const startStr = dateOverride
+    ? toGraphDateTime(dateOverride.start)
+    : toDateTimeStr(event.dayOffset, event.start);
+  const endStr = dateOverride
+    ? toGraphDateTime(dateOverride.end)
+    : toDateTimeStr(event.dayOffset, event.end);
+
   await client.api(`/me/calendars/${calendarId}/events`).post({
     subject: `🌙 Hors plage — ${event.label}`,
     body: {
@@ -140,11 +203,11 @@ export async function createOvertimeEvent(
       content: `Activité détectée hors de la plage de travail usuelle (8h-20h). Cela impacte le facteur Débordement de votre indice de récupération.`,
     },
     start: {
-      dateTime: toDateTimeStr(event.dayOffset, event.start),
+      dateTime: startStr,
       timeZone: TIMEZONE,
     },
     end: {
-      dateTime: toDateTimeStr(event.dayOffset, event.end),
+      dateTime: endStr,
       timeZone: TIMEZONE,
     },
     showAs: "oof",

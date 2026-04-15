@@ -160,12 +160,19 @@ async function runWithProvider(
   let totalEvents = 0;
 
   console.log("5. Création des événements...");
+  // Parse week Monday as local date (YYYY-MM-DD → local midnight)
+  const [wy, wm, wd] = weekDate.split("-").map(Number);
+
   for (let i = 0; i < weekData.length; i++) {
     const day = weekData[i];
     if (!day) {
       console.log(`  ⏭  Jour ${i} — pas de données`);
       continue;
     }
+
+    // Real date for this day (Monday + i)
+    const dayStart = new Date(wy, wm - 1, wd + i);
+    const dayEnd = new Date(wy, wm - 1, wd + i + 1);
 
     // Score all-day
     const scoreEventData: ScoreData = {
@@ -180,10 +187,16 @@ async function runWithProvider(
         rows: f.rows,
       })),
     };
-    await createScoreEvent(client, calendarId, scoreEventData);
+    await createScoreEvent(
+      client,
+      calendarId,
+      scoreEventData,
+      { start: dayStart, end: dayEnd },
+      day
+    );
     totalEvents++;
 
-    // Focus blocks
+    // Focus blocks — use real Date objects from DayRecoveryData
     for (const block of day.focusBlocks) {
       const demoBlock: DemoFocusBlock = {
         dayOffset: i,
@@ -191,11 +204,14 @@ async function runWithProvider(
         end: block.end.getHours() + block.end.getMinutes() / 60,
         label: block.label,
       };
-      await createFocusEvent(client, calendarId, demoBlock);
+      await createFocusEvent(client, calendarId, demoBlock, {
+        start: block.start,
+        end: block.end,
+      });
       totalEvents++;
     }
 
-    // Overtime
+    // Overtime — use real Date objects from DayRecoveryData
     for (const ot of day.overtimeEvents) {
       const demoOt: DemoOvertimeEvent = {
         dayOffset: i,
@@ -203,7 +219,10 @@ async function runWithProvider(
         end: ot.end.getHours() + ot.end.getMinutes() / 60,
         label: ot.label,
       };
-      await createOvertimeEvent(client, calendarId, demoOt);
+      await createOvertimeEvent(client, calendarId, demoOt, {
+        start: ot.start,
+        end: ot.end,
+      });
       totalEvents++;
     }
   }

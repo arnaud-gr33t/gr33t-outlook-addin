@@ -1,37 +1,92 @@
 import * as React from "react";
-import { useState, useCallback } from "react";
-import { Toaster, useId, useToastController, Toast, ToastTitle } from "@fluentui/react-components";
-import { mockWeekData } from "../data/mockData";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Toaster,
+  useId,
+  useToastController,
+  Toast,
+  ToastTitle,
+} from "@fluentui/react-components";
 import type { FactorType } from "../types";
+import { useGraphToken } from "../auth/useGraphToken";
+import { fetchTodayRecovery } from "../calendar/calendarReader";
+import {
+  recoveryToDayScore,
+  type RecoveryAdaptedData,
+} from "../adapters/recoveryToDayScore";
 import TaskPane from "./TaskPane";
 
 /**
  * Composant racine du TaskPane Gr33t.
  *
- * Détient l'état global :
- * - selectedDayIndex : jour actuellement affiché (0 = Lundi, 4 = Vendredi)
- * - hoveredFactor : facteur survolé pour afficher l'overlay correspondant sur la timeline
- *
- * Orchestre TaskPane qui descend les props aux sous-composants.
+ * Récupère via MSAL browser un token Graph, lit le score du jour depuis
+ * le calendrier "Gr33t Recovery", et descend les données au TaskPane.
  */
-const App: React.FC = () => {
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [hoveredFactor, setHoveredFactor] = useState<FactorType | null>(null);
 
-  // Toaster Fluent pour le bouton "Actualiser"
+type DataStatus = "idle" | "loading" | "ready" | "empty" | "error";
+
+const App: React.FC = () => {
+  const [hoveredFactor, setHoveredFactor] = useState<FactorType | null>(null);
+  const [data, setData] = useState<RecoveryAdaptedData | null>(null);
+  const [dataStatus, setDataStatus] = useState<DataStatus>("idle");
+  const [dataError, setDataError] = useState<string | null>(null);
+
+  const { status: authStatus, token, error: authError, signIn, retry: retryAuth } =
+    useGraphToken();
+
   const toasterId = useId("gr33t-toaster");
   const { dispatchToast } = useToastController(toasterId);
 
-  const handleSelectDay = useCallback((index: number) => {
-    setSelectedDayIndex(index);
-  }, []);
+  // Fetch des données dès que le token est disponible
+  const loadData = useCallback(
+    async (accessToken: string) => {
+      setDataStatus("loading");
+      setDataError(null);
+      try {
+        const recovery = await fetchTodayRecovery(accessToken);
+        if (!recovery) {
+          setData(null);
+          setDataStatus("empty");
+          return;
+        }
+        setData(recoveryToDayScore(recovery));
+        setDataStatus("ready");
+      } catch (err) {
+        const message = (err as Error).message;
+        // Token invalide / expiré → purge et re-auth
+        if (message.includes("401") || message.includes("Unauthorized")) {
+          try {
+            const officeAny = (globalThis as { Office?: { context?: { roamingSettings?: { remove(k: string): void; saveAsync(cb: () => void): void } } } }).Office;
+            const roaming = officeAny?.context?.roamingSettings;
+            if (roaming) {
+              roaming.remove("gr33t.graphToken");
+              roaming.remove("gr33t.graphTokenExpiresOn");
+              roaming.saveAsync(() => {
+                /* noop */
+              });
+            }
+          } catch {
+            /* noop */
+          }
+        }
+        setDataError(message);
+        setDataStatus("error");
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (authStatus === "ready" && token) {
+      void loadData(token);
+    }
+  }, [authStatus, token, loadData]);
 
   const handleHoverFactor = useCallback((type: FactorType | null) => {
     setHoveredFactor(type);
   }, []);
 
   const handleClose = useCallback(() => {
-    // Tentative de fermeture via Office (API Mailbox 1.5+)
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const officeAny = Office as any;
@@ -45,24 +100,33 @@ const App: React.FC = () => {
   }, []);
 
   const handleRefresh = useCallback(() => {
+    if (!token) {
+      void retryAuth();
+      return;
+    }
     dispatchToast(
       <Toast>
-        <ToastTitle>Données mockées (Jalon 1)</ToastTitle>
+        <ToastTitle>Actualisation…</ToastTitle>
       </Toast>,
-      { intent: "info", timeout: 2500 }
+      { intent: "info", timeout: 1500 }
     );
-  }, [dispatchToast]);
+    void loadData(token);
+  }, [token, retryAuth, loadData, dispatchToast]);
 
   return (
     <>
       <TaskPane
-        weekData={mockWeekData}
-        selectedDayIndex={selectedDayIndex}
+        authStatus={authStatus}
+        authError={authError}
+        dataStatus={dataStatus}
+        dataError={dataError}
+        data={data}
         hoveredFactor={hoveredFactor}
-        onSelectDay={handleSelectDay}
         onHoverFactor={handleHoverFactor}
         onClose={handleClose}
         onRefresh={handleRefresh}
+        onSignIn={signIn}
+        onRetryAuth={retryAuth}
       />
       <Toaster toasterId={toasterId} position="bottom" />
     </>

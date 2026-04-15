@@ -74,9 +74,9 @@ interface TrackedMeeting {
 /**
  * Filtre les réunions éligibles au suivi Gr33t.
  * Critères (SPEC.md) :
- * - Au moins 2 participants (organisateur + 1 invité)
- * - L'utilisateur a accepté (responseStatus != declined, != none)
  * - Pas un événement all-day
+ * - L'utilisateur a accepté (responseStatus != declined, != none)
+ * - Au moins 1 invité (en plus de l'organisateur) a accepté la réunion
  */
 function filterTrackedMeetings(
   events: RawCalendarEvent[],
@@ -86,13 +86,20 @@ function filterTrackedMeetings(
     // Pas un événement all-day
     if (ev.isAllDay) return false;
 
-    // Au moins 2 participants (organizer + attendees)
-    const totalParticipants = (ev.attendees?.length ?? 0) + 1; // +1 for organizer
-    if (totalParticipants < 2) return false;
-
     // L'utilisateur a accepté
     const response = ev.responseStatus?.response?.toLowerCase() ?? "";
     if (response === "declined" || response === "none") return false;
+
+    // Au moins 1 invité a accepté (en plus de l'organisateur)
+    const acceptedAttendees = (ev.attendees ?? []).filter((att) => {
+      const attResponse = att.status?.response?.toLowerCase() ?? "";
+      return attResponse === "accepted" || attResponse === "organizer";
+    });
+    // On exclut l'organisateur du compte : il faut au moins 1 autre personne ayant accepté
+    const nonOrganizerAccepted = acceptedAttendees.filter(
+      (att) => att.emailAddress?.address?.toLowerCase() !== userEmail.toLowerCase()
+    );
+    if (nonOrganizerAccepted.length === 0) return false;
 
     return true;
   });

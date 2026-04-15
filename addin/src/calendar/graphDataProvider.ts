@@ -103,10 +103,14 @@ export class GraphDataProvider implements DataProvider {
       d.setDate(d.getDate() + i);
       const dateStr = d.toISOString().split("T")[0];
 
-      // Ne pas calculer les jours futurs
+      // Ne pas calculer les jours strictement futurs (après aujourd'hui).
+      // Aujourd'hui est inclus pour que le TaskPane puisse afficher les données
+      // partielles du jour en cours.
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      if (d >= today) {
+      const dayStart = new Date(d);
+      dayStart.setHours(0, 0, 0, 0);
+      if (dayStart.getTime() > today.getTime()) {
         console.log(`  ⏭  ${dateStr} — jour futur, ignoré`);
         results.push(null);
         continue;
