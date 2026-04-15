@@ -7,7 +7,7 @@
   xsi:type="MailApp">
 
   <Id>7b3d7e1a-4f1e-4c2a-9d8f-1e5a2c3b4d5e</Id>
-  <Version>1.0.2.0</Version>
+  <Version>1.0.3.0</Version>
   <ProviderName>Gr33t</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="Gr33t Recovery Layer" />
@@ -18,6 +18,9 @@
 
   <AppDomains>
     <AppDomain>https://www.gr33t.fr</AppDomain>
+    <AppDomain>https://login.microsoftonline.com</AppDomain>
+    <AppDomain>https://login.microsoft.com</AppDomain>
+    <AppDomain>https://graph.microsoft.com</AppDomain>
   </AppDomains>
 
   <Hosts>
