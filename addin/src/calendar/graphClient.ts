@@ -160,7 +160,7 @@ export async function createFocusEvent(
     : toDateTimeStr(block.dayOffset, block.end);
 
   await client.api(`/me/calendars/${calendarId}/events`).post({
-    subject: `🎯 Focus (${block.label})`,
+    subject: `✅ Focus (${block.label})`,
     body: {
       contentType: "text",
       content: `Plage de travail profond disponible : ${block.label} sans réunion ni mail envoyé.`,
@@ -177,7 +177,7 @@ export async function createFocusEvent(
     isReminderOn: false,
   });
 
-  console.log(`  🎯 Focus jour ${block.dayOffset}: ${block.label}`);
+  console.log(`  ✅ Focus jour ${block.dayOffset}: ${block.label}`);
 }
 
 /**
