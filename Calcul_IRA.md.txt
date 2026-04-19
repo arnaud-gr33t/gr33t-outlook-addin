@@ -1,0 +1,307 @@
+
+# Calcul de l'Indice de Récupération Active (IRA)
+
+## Vue d'ensemble
+
+L'Indice de Récupération Active (IRA) mesure la capacité d'un collaborateur à maintenir sa performance dans la durée grâce à ses pratiques de récupération active. Il s'inspire des principes d'entraînement des athlètes de haut niveau : la performance dépend autant de l'effort que de la récupération.
+
+---
+
+## Formule de calcul
+
+### Formule principale
+
+```
+IRA = (0.30 × Transitions) + (0.30 × Concentration) + (0.25 × Horaires) + (0.15 × Focus)
+```
+
+**Résultat :** Score arrondi à l'entier le plus proche, sur une échelle de 0 à 100.
+
+---
+
+## Détail des facteurs récupérateurs
+
+L'IRA est composé de 4 facteurs récupérateurs, chacun mesuré sur une échelle de 0 à 100 %.
+
+### 1. Transitions préservées (poids : 30%)
+
+**Définition :** Pourcentage de réunions précédées ou suivies d'une plage libre d'au moins 10 minutes.
+
+**Formule :**
+```
+Transitions = (Nombre de réunions avec ≥10min avant OU après / Nombre total de réunions) × 100
+```
+
+**Modalités de calcul :**
+- Période de référence : semaine calendaire (lundi-vendredi)
+- Transition = plage libre ≥10 minutes avant OU après une réunion
+- Plage libre = aucune réunion, aucun envoi de mail/chat
+
+**Exemple :**
+```
+Données :
+- 20 réunions dans la semaine
+- 13 réunions ont une marge ≥10 minutes (avant ou après)
+
+Calcul :
+Transitions = 13/20 × 100 = 65%
+```
+
+**Fondement neuroscientifique :** 70% des collaborateurs ressentent une fatigue accrue après 3h de réunions enchaînées (Enquête Ipsos-Lecko). Sans temps de transition, le cerveau n'a pas le temps de récupérer ni de se préparer au sujet suivant.
+
+---
+
+### 2. Plages de concentration (poids : 30%)
+
+**Définition :** Pourcentage du temps de travail en plages continues de plus de 2h sans interruption.
+
+**Formule :**
+```
+Concentration = (Temps en plages continues ≥2h / Temps total de travail hors réunions) × 100
+```
+
+**Modalités de calcul :**
+- Période de référence : semaine calendaire (lundi-vendredi)
+- Temps total de travail = temps entre première et dernière activité numérique (mail, chat, réunion)
+- Temps hors réunions = temps total - durée cumulée des réunions
+- Plage de concentration = intervalle ≥2h sans envoi de mail, chat ou réunion
+- Interruption = tout envoi de mail, chat ou début de réunion
+
+**Exemple :**
+```
+Données :
+- 40h de travail hebdomadaire
+- 15h en réunions → 25h disponibles hors réunions
+- 14.5h en plages continues ≥2h (sans interruption)
+
+Calcul :
+Concentration = 14.5/25 × 100 = 58%
+```
+
+**Fondement neuroscientifique :** Notre mémoire de travail ne peut manipuler que 7 ± 2 informations simultanément. Chaque changement de tâche fragmente la concentration et entraîne un temps perdu important, menant plusieurs fois par jour à un état de surcharge cognitive.
+
+---
+
+### 3. Respect des horaires (poids : 25%)
+
+**Définition :** Pourcentage de journées sans activité avant 8h ou après 18h30.
+
+**Formule :**
+```
+Horaires = (Nombre de jours sans activité hors 8h-18h30 / Nombre de jours travaillés) × 100
+```
+
+**Modalités de calcul :**
+- Période de référence : semaine calendaire (lundi-dimanche, 7 jours)
+- Jour travaillé = jour avec au moins une activité numérique (mail, chat, réunion)
+- Activité en débordement = tout envoi de mail, chat ou réunion avant 8h00 ou après 18h30
+- Comptage en demi-journées si débordement partiel (ex : activité jusqu'à 19h = 0.5 jour en débordement)
+
+**Exemple :**
+```
+Données :
+- 5 jours travaillés (lundi à vendredi)
+- Lundi : activité jusqu'à 19h15 → 0.5 jour en débordement
+- Mardi : activité de 8h30 à 17h45 → 0 jour en débordement
+- Mercredi : activité de 7h45 à 18h15 → 0.5 jour en débordement
+- Jeudi : activité de 8h15 à 18h20 → 0 jour en débordement
+- Vendredi : activité de 8h00 à 17h30 → 0 jour en débordement
+- Total : 1 jour en débordement (0.5 + 0.5)
+- Jours sans débordement : 5 - 1 = 4 → mais on valorise partiellement = 3.5
+
+Calcul :
+Horaires = 3.5/5 × 100 = 70%
+```
+
+**Fondement neuroscientifique :** Notre charge cognitive diminue grâce aux temps de détente déconnectés de l'activité professionnelle. Repenser au travail, même quelques secondes, rompt la phase de régénération. Comme un bruit en plein milieu de la nuit, cela impacte notre récupération.
+
+---
+
+### 4. Focus en réunion (poids : 15%)
+
+**Définition :** Pourcentage de réunions sans envoi de mails ou chats pendant la durée de la réunion.
+
+**Formule :**
+```
+Focus = (Nombre de réunions sans envoi mail/chat pendant / Nombre total de réunions) × 100
+```
+
+**Modalités de calcul :**
+- Période de référence : semaine calendaire (lundi-vendredi)
+- Réunion = événement calendrier avec au moins 1 autre participant
+- Multitâche détecté = envoi de mail OU envoi de chat dont le timestamp est compris entre l'heure de début et l'heure de fin de la réunion
+- Tolérance : mails/chats envoyés dans les 2 premières minutes de la réunion ne sont pas comptés (temps de connexion)
+
+**Exemple :**
+```
+Données :
+- 20 réunions dans la semaine
+- 14 réunions sans envoi de mail/chat pendant leur durée
+- 6 réunions avec au moins 1 mail ou chat envoyé
+
+Calcul :
+Focus = 14/20 × 100 = 70%
+```
+
+**Fondement neuroscientifique :** Envoyer des mails ou chats pendant une réunion fragmente l'attention. Le multitâche dépasse rapidement les capacités de notre cerveau. On perd le fil de la discussion et on devra solliciter à nouveau nos collègues pour comprendre ce qu'on a manqué, créant ainsi du bruit organisationnel.
+
+---
+
+## Exemple de calcul complet
+
+### Données d'entrée (semaine du 14-18 avril 2026)
+
+| Facteur | Valeur | Calcul détaillé |
+|---------|--------|-----------------|
+| **Transitions** | 65% | 13 réunions avec marge sur 20 réunions totales |
+| **Concentration** | 58% | 14.5h en plages ≥2h sur 25h disponibles hors réunions |
+| **Horaires** | 70% | 3.5 jours sans débordement sur 5 jours travaillés |
+| **Focus** | 72% | 14.4 réunions sans multitâche sur 20 réunions (arrondi à 72%) |
+
+### Calcul de l'IRA
+
+```
+IRA = (0.30 × 65) + (0.30 × 58) + (0.25 × 70) + (0.15 × 72)
+
+Détail :
+= (0.30 × 65) + (0.30 × 58) + (0.25 × 70) + (0.15 × 72)
+= 19.5 + 17.4 + 17.5 + 10.8
+= 65.2
+
+Résultat arrondi :
+IRA = 65
+```
+
+---
+
+## Échelle d'interprétation
+
+| Score IRA | Niveau de capacité | Couleur | Recommandation |
+|-----------|-------------------|---------|----------------|
+| **70 - 100** | Excellente capacité de récupération | 🟢 Vert | Maintenir les bonnes pratiques actuelles |
+| **50 - 69** | Capacité modérée | 🟠 Orange | Appliquer 1-2 conseils prioritaires pour améliorer |
+| **0 - 49** | Capacité faible - Zone de risque | 🔴 Rouge | Action urgente - Risque d'épuisement professionnel |
+
+### Alertes spécifiques
+
+- **IRA < 50 pendant 3 semaines consécutives :** Période de dégradation prolongée détectée → Risque élevé d'épuisement
+- **IRA < 40 :** Alerte critique → Recommandation d'échange avec le manager ou le service RH
+
+---
+
+## Justification de la pondération
+
+### Répartition des poids
+
+```
+Facteurs majeurs (60% du score total) :
+├─ Transitions : 30%
+└─ Concentration : 30%
+
+Facteurs importants (40% du score total) :
+├─ Horaires : 25%
+└─ Focus : 15%
+```
+
+### Rationale
+
+**Transitions (30%) :**
+- Levier majeur de récupération active
+- Impact direct sur la capacité à aborder chaque réunion avec énergie
+- Facilement actionnable individuellement (bloquer 10 min dans son agenda)
+- Poids élevé car c'est un facteur de récupération immédiat
+
+**Concentration (30%) :**
+- Levier majeur d'efficacité et de récupération cognitive
+- Le travail profond permet d'accomplir plus en moins de temps
+- Réduction de la fatigue cognitive par rapport au multitâche permanent
+- Poids élevé car impact sur la performance ET la récupération
+
+**Horaires (25%) :**
+- Récupération essentielle (sommeil, vie personnelle)
+- Parfois contraint par des impératifs externes (clients, équipes internationales)
+- Moins actionnable individuellement que transitions/concentration
+- Poids significatif mais modéré pour tenir compte des contraintes réelles
+
+**Focus (15%) :**
+- Important pour la qualité d'attention
+- Concerne uniquement le temps en réunion (~30-40% du temps de travail)
+- Impact indirect sur la récupération
+- Plus facile à corriger que les autres facteurs
+- Poids plus faible reflétant son impact moindre sur l'IRA global
+
+---
+
+## Sources de données (Microsoft 365)
+
+### APIs Microsoft Graph utilisées
+
+| Facteur | Données requises | API Graph | Permissions |
+|---------|------------------|-----------|-------------|
+| **Transitions** | Calendrier des réunions (début, fin) | `/me/calendar/events` | `Calendars.Read` |
+| **Concentration** | Envois de mails, chats, réunions | `/me/messages`<br>`/me/chats/messages`<br>`/me/calendar/events` | `Mail.Read`<br>`Chat.Read`<br>`Calendars.Read` |
+| **Horaires** | Horodatage des mails, chats, réunions | `/me/messages`<br>`/me/chats/messages`<br>`/me/calendar/events` | `Mail.Read`<br>`Chat.Read`<br>`Calendars.Read` |
+| **Focus** | Envois de mails/chats pendant les réunions | `/me/messages`<br>`/me/chats/messages`<br>`/me/calendar/events` | `Mail.Read`<br>`Chat.Read`<br>`Calendars.Read` |
+
+### Période de calcul
+
+- **Période standard :** Semaine calendaire (lundi 00h00 - dimanche 23h59)
+- **Rafraîchissement :** Quotidien (calcul chaque nuit pour J-1)
+- **Historique :** 26 semaines (6 mois) conservées pour analyse de tendance
+
+---
+
+## Évolutions et améliorations possibles
+
+### Version 1.0 (actuelle)
+- Calcul hebdomadaire
+- 4 facteurs récupérateurs
+- Pondération fixe
+
+### Version 1.1 (envisagée)
+- Ajout d'un facteur "Temps de pause méridienne" (détection de plages 12h-14h sans activité)
+- Détection des "journées saines" (IRA journalier ≥70) pour encouragement positif
+
+### Version 2.0 (prospective)
+- Pondération adaptative selon le profil utilisateur (manager vs contributeur individuel)
+- Intégration des données Viva Insights (temps de concentration mesuré par Microsoft)
+- Détection des patterns individuels (rythme circadien, jours de meilleure productivité)
+
+---
+
+## Conformité RGPD et confidentialité
+
+### Principes de protection des données
+
+1. **Données individuelles uniquement :** L'IRA et les facteurs détaillés ne sont visibles que par l'utilisateur concerné
+2. **Partage limité :** Seul l'IRA global (score agrégé) peut être partagé avec le manager, jamais le détail des facteurs
+3. **Consentement explicite :** L'utilisateur doit consentir à l'activation du calcul de son IRA
+4. **Droit à l'effacement :** L'utilisateur peut demander la suppression de toutes ses données IRA à tout moment
+5. **Transparence :** La formule de calcul est documentée et accessible à tous les utilisateurs
+6. **Stockage sécurisé :** Données chiffrées au repos et en transit, hébergement en Europe (Azure EU)
+
+### Données pseudonymisées
+
+Pour les analyses agrégées au niveau entreprise :
+- Anonymisation par groupe de ≥10 personnes minimum
+- Pas de possibilité de ré-identification individuelle
+- Uniquement pour pilotage QVCT global
+
+---
+
+## Références
+
+### Fondements neuroscientifiques
+- Enquête Ipsos-Lecko sur la fatigue cognitive en réunion
+- Travaux sur la mémoire de travail et ses limites (7 ± 2 items)
+- Recherches sur l'impact du multitâche sur la performance cognitive
+
+### Inspirations méthodologiques
+- Programme "10 000 pas" de l'OMS (approche quantifiée de la prévention santé)
+- Principes d'entraînement des athlètes de haut niveau (récupération active)
+- Littérature sur le bruit organisationnel et la surcharge cognitive
+
+---
+
+**Document version :** 1.0  
+**Date de dernière mise à jour :** 19 avril 2026  
