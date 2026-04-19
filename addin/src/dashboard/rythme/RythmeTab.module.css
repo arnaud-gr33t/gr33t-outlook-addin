@@ -1,0 +1,6 @@
+.rhythmBottom {
+  display: grid;
+  grid-template-columns: 1fr 2.2fr 1.7fr;
+  gap: 14px;
+  align-items: stretch;
+}

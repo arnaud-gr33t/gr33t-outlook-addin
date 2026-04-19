@@ -1,0 +1,197 @@
+/* === Marqueur numéroté sur day-canvas === */
+.marker {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  z-index: 5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  bottom: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: transform 0.12s, box-shadow 0.12s;
+  font-family: "DM Sans", sans-serif;
+  border: none;
+}
+
+.red {
+  background: var(--negative);
+}
+.orange {
+  background: var(--intermediate);
+}
+.positive {
+  background: var(--positive);
+}
+
+.marker:hover {
+  transform: translateX(-50%) scale(1.2);
+  z-index: 10;
+}
+
+.marker.active {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 0 0 2.5px white,
+    0 0 0 4.5px var(--primary);
+  z-index: 15;
+}
+
+.marker.defaultShown {
+  opacity: 0.7;
+}
+
+.marker.defaultShown:hover {
+  opacity: 1;
+}
+
+@keyframes markerPulse {
+  0% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15),
+      0 0 0 0 rgba(34, 102, 221, 0.5);
+  }
+  50% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 0 0 6px rgba(34, 102, 221, 0);
+  }
+  100% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(34, 102, 221, 0);
+  }
+}
+
+.marker.crossHighlight {
+  animation: markerPulse 1.2s ease-out infinite;
+  transform: translateX(-50%) scale(1.15);
+  z-index: 12;
+}
+
+/* === Zone des bulles (sous la timeline) === */
+.bubblesArea {
+  position: relative;
+  min-height: 82px;
+  margin-top: 14px;
+  transition: opacity 0.2s ease;
+}
+
+.bubble {
+  position: absolute;
+  top: 0;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  transform: translateX(-50%);
+}
+
+/* État default : seules les bulles default=true sont visibles */
+.bubblesArea[data-mode="default"] .bubble {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.bubblesArea[data-mode="default"] .bubble[data-default="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* État focus : seule la bulle active est visible */
+.bubblesArea[data-mode="focus"] .bubble {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.bubblesArea[data-mode="focus"] .bubble.activeBubble {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.bubbleInner {
+  background: white;
+  border: 1px solid var(--surface-variant);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--on-surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 320px;
+  cursor: pointer;
+  position: relative;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.bubble.crossHighlight .bubbleInner {
+  box-shadow: 0 4px 14px rgba(34, 102, 221, 0.18);
+  transform: translateY(-2px);
+}
+
+.bubbleTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.bubbleNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0;
+  text-transform: none;
+  flex-shrink: 0;
+  font-family: "DM Sans", sans-serif;
+}
+
+.bubbleDesc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--on-surface-muted);
+}
+
+.close {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--on-surface-muted);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  z-index: 5;
+  transition: background 0.12s, color 0.12s;
+}
+
+.bubblesArea[data-mode="focus"] .bubble.activeBubble .close {
+  display: flex;
+}
+
+.close:hover {
+  background: var(--surface-variant);
+  color: var(--on-surface);
+}

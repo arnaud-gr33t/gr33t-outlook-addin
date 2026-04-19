@@ -21,6 +21,7 @@ module.exports = async (env, options) => {
       taskpane: ["./src/taskpane/index.tsx", "./src/taskpane/taskpane.html"],
       commands: "./src/commands/commands.html",
       auth: ["./src/auth/auth.ts", "./src/auth/auth.html"],
+      dashboard: ["./src/dashboard/index.tsx", "./src/dashboard/dashboard.html"],
     },
     output: {
       clean: true,
@@ -47,7 +48,29 @@ module.exports = async (env, options) => {
           use: "html-loader",
         },
         {
+          // CSS modules : *.module.css → classes scopées
+          test: /\.module\.css$/,
+          use: [
+            "style-loader",
+            {
+              loader: "css-loader",
+              options: {
+                // css-loader v7 : il faut désactiver namedExport pour garder
+                // la compatibilité `import styles from "./X.module.css"`.
+                esModule: true,
+                modules: {
+                  namedExport: false,
+                  exportLocalsConvention: "as-is",
+                  localIdentName: dev ? "[name]__[local]" : "[hash:base64:8]",
+                },
+              },
+            },
+          ],
+        },
+        {
+          // CSS global : tous les autres *.css (tokens.css, global.css)
           test: /\.css$/,
+          exclude: /\.module\.css$/,
           use: ["style-loader", "css-loader"],
         },
         {
@@ -74,6 +97,11 @@ module.exports = async (env, options) => {
         filename: "auth.html",
         template: "./src/auth/auth.html",
         chunks: ["polyfill", "auth"],
+      }),
+      new HtmlWebpackPlugin({
+        filename: "dashboard.html",
+        template: "./src/dashboard/dashboard.html",
+        chunks: ["polyfill", "dashboard"],
       }),
       new CopyWebpackPlugin({
         patterns: [

@@ -155,3 +155,82 @@ export async function fetchTodayRecovery(
     overtimeEvents: [],
   };
 }
+
+/**
+ * Récupère les données d'une semaine complète (Lun → Ven) en une seule
+ * requête Graph. Retourne un tableau de 5 éléments (null pour les jours
+ * sans score event).
+ *
+ * @param mondayDate format ISO "YYYY-MM-DD" du lundi de la semaine
+ */
+export async function fetchWeekRecovery(
+  token: string,
+  mondayDate: string
+): Promise<(DayRecoveryData | null)[]> {
+  const calendarId = await resolveCalendarId(token);
+  if (!calendarId) return [null, null, null, null, null];
+
+  const [y, mo, d] = mondayDate.split("-").map(Number);
+  const monday = new Date(y, mo - 1, d);
+  const saturday = new Date(y, mo - 1, d + 5); // exclusif
+
+  const startFilter = toLocalIsoDate(monday);
+  const endFilter = toLocalIsoDate(saturday);
+
+  // Fetch tous les score all-day de la semaine avec leur extension
+  const filter = `start/dateTime ge '${startFilter}' and start/dateTime lt '${endFilter}' and isAllDay eq true`;
+  const expand = `extensions($filter=id eq '${RECOVERY_EXTENSION_NAME}')`;
+  const path = `/me/calendars/${calendarId}/events?$filter=${encodeURIComponent(
+    filter
+  )}&$expand=${encodeURIComponent(expand)}&$top=20&$orderby=start/dateTime`;
+
+  const resp = await graphGet<GraphListResponse<GraphEvent>>(token, path);
+
+  // Indexer par date (YYYY-MM-DD) extraite de start.dateTime
+  const byDate = new Map<string, GraphEvent>();
+  for (const ev of resp.value) {
+    if (!ev.isAllDay) continue;
+    const dateStr = ev.start.dateTime.split("T")[0];
+    byDate.set(dateStr, ev);
+  }
+
+  // Pour chaque jour Lun-Ven, tenter de hydrate l'extension
+  const results: (DayRecoveryData | null)[] = [];
+  for (let i = 0; i < 5; i++) {
+    const dayDate = new Date(y, mo - 1, d + i);
+    const dayStr = toLocalIsoDate(dayDate).split("T")[0];
+    const ev = byDate.get(dayStr);
+    if (!ev) {
+      results.push(null);
+      continue;
+    }
+    const ext = ev.extensions?.find(
+      (e) => e.extensionName === RECOVERY_EXTENSION_NAME
+    );
+    if (ext?.payload && typeof ext.payload === "string") {
+      try {
+        results.push(rehydrateRecoveryPayload(ext.payload));
+        continue;
+      } catch (err) {
+        console.warn(`Failed to parse payload for ${dayStr}:`, err);
+      }
+    }
+    // Fallback minimal depuis le subject
+    const scoreMatch = ev.subject.match(/(\d+)%/);
+    const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+    results.push({
+      date: dayStr,
+      dayLabel: dayDate.toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }),
+      score,
+      scoreLabel: "Données incomplètes — relance le script de peuplement",
+      factors: [],
+      focusBlocks: [],
+      overtimeEvents: [],
+    });
+  }
+  return results;
+}

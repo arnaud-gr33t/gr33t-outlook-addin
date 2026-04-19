@@ -1,0 +1,19 @@
+/* Design tokens — Gr33t Rythme dashboard
+   Extrait fidèlement de scenario-C-rythme.html (:root) */
+:root {
+  --primary: #2266dd;
+  --secondary: #205cbb;
+  --tertiary: #20aee2;
+  --positive: #4dad33;
+  --intermediate: #ed6d2d;
+  --negative: #ef4e78;
+  --neutral: #3e8f98;
+  --surface: #f5f7fa;
+  --surface-variant: #e3e8f0;
+  --on-surface: #1a1c1e;
+  --on-surface-muted: rgba(26, 28, 30, 0.6);
+
+  /* Variations supplémentaires utilisées dans la maquette */
+  --positive-dark: #3e9429;
+  --intermediate-dark: #d85a20;
+}

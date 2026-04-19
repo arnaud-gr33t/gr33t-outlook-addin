@@ -1,0 +1,46 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.19/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.19",
+  "version": "1.0.0",
+  "id": "2b8c1c94-7e89-4f2d-8a3b-9e5f6c7d8e9f",
+  "developer": {
+    "name": "Gr33t",
+    "websiteUrl": "https://www.gr33t.fr",
+    "privacyUrl": "https://www.gr33t.fr/privacy",
+    "termsOfUseUrl": "https://www.gr33t.fr/terms"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Gr33t",
+    "full": "Gr33t Recovery Dashboard"
+  },
+  "description": {
+    "short": "Dashboard hebdo de vos facteurs de récupération",
+    "full": "Affiche la vue semaine de vos 4 facteurs de récupération Gr33t (multi-tâche, transitions, débordement, travail profond). Complément de l'add-in Outlook Gr33t Recovery Layer."
+  },
+  "accentColor": "#107C10",
+  "staticTabs": [
+    {
+      "entityId": "gr33t-dashboard",
+      "name": "Gr33t",
+      "contentUrl": "https://arnaud-gr33t.github.io/gr33t-outlook-addin/dashboard.html",
+      "websiteUrl": "https://arnaud-gr33t.github.io/gr33t-outlook-addin/dashboard.html",
+      "scopes": ["personal"],
+      "context": ["personalTab"]
+    }
+  ],
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": [
+    "arnaud-gr33t.github.io",
+    "login.microsoftonline.com",
+    "login.microsoft.com",
+    "graph.microsoft.com"
+  ],
+  "webApplicationInfo": {
+    "id": "db7277cc-f16f-4739-9358-33fc327bcd28",
+    "resource": "api://arnaud-gr33t.github.io/db7277cc-f16f-4739-9358-33fc327bcd28"
+  }
+}

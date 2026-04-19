@@ -261,20 +261,45 @@ function calculateOvertime(
     }
   });
 
-  // Count mails outside 8h-20h
-  let mailsOutside = 0;
+  // Collect mails outside 8h-20h, then regrouper en clusters temporels
+  // (fenêtre consécutive ≤ 15 min) pour éviter de saturer la timeline quand
+  // plusieurs mails partent en rafale (ex: 4 mails à 7h du matin).
+  const MAIL_CLUSTER_GAP_MIN = 15;
+  const outOfRangeMails: Date[] = [];
   sentMails.forEach((m) => {
     const d = parseDateTime(m.sentDateTime);
     const h = toDecimalHour(d);
     if (h < WORK_START || h >= WORK_END) {
-      mailsOutside++;
-      overtime.push({
-        start: d,
-        end: new Date(d.getTime() + 5 * 60000), // 5 min block
-        label: `Mail ${formatTime(d)}`,
-        type: "mail",
-      });
+      outOfRangeMails.push(d);
     }
+  });
+
+  const mailsOutside = outOfRangeMails.length;
+
+  outOfRangeMails.sort((a, b) => a.getTime() - b.getTime());
+  interface MailCluster { start: Date; end: Date; count: number }
+  const clusters: MailCluster[] = [];
+  for (const d of outOfRangeMails) {
+    const last = clusters[clusters.length - 1];
+    if (last && d.getTime() - last.end.getTime() <= MAIL_CLUSTER_GAP_MIN * 60000) {
+      last.end = d;
+      last.count++;
+    } else {
+      clusters.push({ start: d, end: d, count: 1 });
+    }
+  }
+
+  clusters.forEach((c) => {
+    const label =
+      c.count === 1
+        ? `Mail ${formatTime(c.start)}`
+        : `${c.count} mails à ${c.start.getHours()}h`;
+    overtime.push({
+      start: c.start,
+      end: new Date(c.end.getTime() + 5 * 60000), // bloc ≥5 min après le dernier mail
+      label,
+      type: "mail",
+    });
   });
 
   let score: number;
@@ -319,6 +344,7 @@ function calculateOvertime(
 // ============================================================
 
 function calculateDeepWork(
+  date: string,
   events: RawCalendarEvent[],
   sentMails: RawSentMail[]
 ): { score: number; factor: Factor; focusBlocks: FocusBlock[] } {
@@ -346,6 +372,14 @@ function calculateDeepWork(
   const dayStart = new Date(firstMail);
   dayStart.setHours(WORK_START, 0, 0, 0);
   const effectiveStart = firstMail.getTime() > dayStart.getTime() ? dayStart : dayStart;
+
+  // Plafond "temps écoulé" : si la date calculée est aujourd'hui, on ne
+  // considère comme focus disponible que les plages DÉJÀ passées. Les
+  // heures à venir ne sont pas encore du focus réalisé.
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
+  const isToday = date === todayStr;
+  const nowMs = now.getTime();
 
   // Build list of "busy" periods (meetings + mails)
   const busyPeriods: Array<{ start: Date; end: Date }> = [];
@@ -385,6 +419,13 @@ function calculateDeepWork(
     rangeStart.setHours(Math.floor(range.start), (range.start % 1) * 60, 0, 0);
     const rangeEnd = new Date(referenceDate);
     rangeEnd.setHours(Math.floor(range.end), (range.end % 1) * 60, 0, 0);
+
+    // Si aujourd'hui et la plage est entièrement future → on l'ignore
+    if (isToday && rangeStart.getTime() >= nowMs) continue;
+    // Si aujourd'hui et la plage dépasse l'heure courante → tronquer
+    if (isToday && rangeEnd.getTime() > nowMs) {
+      rangeEnd.setTime(nowMs);
+    }
 
     // Merge busy periods within this range
     let cursor = rangeStart.getTime();
@@ -468,10 +509,30 @@ export function calculateDayRecovery(
   const mt = calculateMultitasking(tracked, sentMails);
   const tr = calculateTransitions(tracked);
   const ot = calculateOvertime(events, sentMails);
-  const dw = calculateDeepWork(events, sentMails);
+  const dw = calculateDeepWork(date, events, sentMails);
 
-  // Global score
-  const score = mt.score + tr.score + ot.score + dw.score;
+  // Détection : journée pas encore commencée (avant WORK_START sur aujourd'hui).
+  // Dans ce cas, le facteur "Travail profond" n'est pas applicable et le score
+  // est renormalisé sur les 3 autres facteurs (base 75 → 100).
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`;
+  const dayNotStarted = date === todayStr && now.getHours() < WORK_START;
+
+  let score: number;
+  let deepWorkFactor: Factor;
+  if (dayNotStarted) {
+    const partial = mt.score + tr.score + ot.score;
+    score = Math.round((partial * 100) / 75);
+    deepWorkFactor = {
+      name: "Plage de travail profond disponible",
+      summary: "Journée pas encore commencée",
+      cls: "neutral",
+      rows: [],
+    };
+  } else {
+    score = mt.score + tr.score + ot.score + dw.score;
+    deepWorkFactor = dw.factor;
+  }
 
   // Score label
   let scoreLabel: string;
@@ -490,7 +551,7 @@ export function calculateDayRecovery(
     dayLabel: formatDate(d),
     score,
     scoreLabel,
-    factors: [mt.factor, tr.factor, ot.factor, dw.factor],
+    factors: [mt.factor, tr.factor, ot.factor, deepWorkFactor],
     focusBlocks: dw.focusBlocks,
     overtimeEvents: ot.overtimeEvents,
     meetings,

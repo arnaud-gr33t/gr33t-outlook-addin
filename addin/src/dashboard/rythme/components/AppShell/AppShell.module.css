@@ -1,0 +1,45 @@
+.shell {
+  min-height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.pane {
+  display: none;
+  padding: 16px 20px 80px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.pane.active {
+  display: block;
+}
+
+.narrowGuard {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+  color: var(--on-surface-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--surface);
+}
+
+.narrowGuard strong {
+  display: block;
+  font-size: 18px;
+  color: var(--on-surface);
+  margin-bottom: 8px;
+}

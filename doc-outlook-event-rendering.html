@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Outlook Calendar — Possibilités de rendu des événements</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --card: #ffffff;
+      --border: #e0e0e0;
+      --text: #1a1a1a;
+      --text2: #555;
+      --accent: #0078d4;
+      --green: #107c10;
+      --orange: #bc4b09;
+      --red: #b10e1c;
+      --purple: #881798;
+      --teal: #038387;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 32px 24px 80px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+    .subtitle {
+      font-size: 15px;
+      color: var(--text2);
+      margin-bottom: 40px;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 16px;
+    }
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 40px 0 16px;
+      padding-left: 12px;
+      border-left: 4px solid var(--accent);
+    }
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 20px 0 8px;
+      color: var(--text2);
+    }
+    p, li {
+      font-size: 14px;
+      color: var(--text2);
+    }
+    p { margin-bottom: 12px; }
+    ul { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 4px; }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .card p:last-child { margin-bottom: 0; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 12px 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #f0f0f0;
+      font-weight: 600;
+      color: var(--text);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td { color: var(--text2); }
+    tr:last-child td { border-bottom: none; }
+
+    /* showAs demo strips */
+    .showas-demo {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 16px 0;
+    }
+    .showas-item {
+      display: flex;
+      align-items: stretch;
+      width: 160px;
+      height: 64px;
+      background: #e8f4e8;
+      border-radius: 4px;
+      overflow: hidden;
+      font-size: 12px;
+      position: relative;
+    }
+    .showas-item .strip {
+      width: 4px;
+      flex-shrink: 0;
+    }
+    .showas-item .content {
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .showas-item .label {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 11px;
+    }
+    .showas-item .code {
+      font-family: "Cascadia Code", "Fira Code", monospace;
+      color: var(--text2);
+      font-size: 10px;
+      margin-top: 2px;
+    }
+    /* free: no strip */
+    .strip-free { background: transparent; }
+    /* tentative: hatched */
+    .strip-tentative {
+      background: repeating-linear-gradient(
+        -45deg,
+        #107c10,
+        #107c10 2px,
+        transparent 2px,
+        transparent 5px
+      );
+    }
+    /* busy: solid calendar color */
+    .strip-busy { background: #107c10; }
+    /* oof: purple solid */
+    .strip-oof { background: #881798; }
+    /* workingElsewhere: dotted */
+    .strip-working {
+      background: repeating-linear-gradient(
+        to bottom,
+        #107c10 0px,
+        #107c10 4px,
+        transparent 4px,
+        transparent 8px
+      );
+    }
+
+    /* Category color dots */
+    .cat-dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0;
+    }
+    .cat-dot {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text2);
+      background: #f5f5f5;
+      padding: 3px 8px 3px 4px;
+      border-radius: 12px;
+    }
+    .cat-dot .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Emoji showcase */
+    .emoji-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+    .emoji-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f5f5f5;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .emoji-item .em { font-size: 18px; }
+
+    /* Summary matrix */
+    .used { color: var(--green); font-weight: 600; }
+    .unused { color: var(--text2); }
+    .impact-high {
+      background: #e8f4e8;
+      color: var(--green);
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .impact-med {
+      background: #fff4e5;
+      color: var(--orange);
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .impact-low {
+      background: #f5f5f5;
+      color: #888;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    /* API snippet */
+    .api-snippet {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 14px 18px;
+      border-radius: 6px;
+      font-family: "Cascadia Code", "Fira Code", monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .api-snippet .key { color: #9cdcfe; }
+    .api-snippet .str { color: #ce9178; }
+    .api-snippet .comment { color: #6a9955; }
+
+    /* Gr33t usage badge */
+    .gr33t-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: white;
+    }
+    .gr33t-badge.score { background: #0078d4; }
+    .gr33t-badge.focus { background: var(--green); }
+    .gr33t-badge.overtime { background: var(--purple); }
+    .gr33t-badge.free { background: #888; }
+
+    /* Constraint callout */
+    .constraint {
+      background: #fff8e1;
+      border-left: 4px solid #f9a825;
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    .constraint strong { color: #e65100; }
+
+    /* Footer */
+    .footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Outlook Calendar — Rendu des événements</h1>
+<p class="subtitle">
+  Possibilités de différenciation visuelle des événements au sein d'un même calendrier Outlook,
+  appliquées au calendrier overlay <strong>Gr33t Recovery</strong>.<br>
+  Référence : Microsoft Graph API v1.0 — <code>POST /me/calendars/{id}/events</code>
+</p>
+
+<!-- =========================================================== -->
+<h2>1. <code>showAs</code> — Bande latérale gauche</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <p>
+    Propriété la plus impactante visuellement. Contrôle la <strong>bande colorée sur le bord gauche</strong>
+    de chaque événement dans la grille Semaine/Jour. 5 valeurs possibles :
+  </p>
+
+  <div class="showas-demo">
+    <div class="showas-item">
+      <div class="strip strip-free"></div>
+      <div class="content">
+        <div class="label">free</div>
+        <div class="code">Pas de bande</div>
+      </div>
+    </div>
+    <div class="showas-item">
+      <div class="strip strip-tentative"></div>
+      <div class="content">
+        <div class="label">tentative</div>
+        <div class="code">Hachures diag.</div>
+      </div>
+    </div>
+    <div class="showas-item">
+      <div class="strip strip-busy"></div>
+      <div class="content">
+        <div class="label">busy</div>
+        <div class="code">Bande pleine</div>
+      </div>
+    </div>
+    <div class="showas-item">
+      <div class="strip strip-oof"></div>
+      <div class="content">
+        <div class="label">oof</div>
+        <div class="code">Bande mauve</div>
+      </div>
+    </div>
+    <div class="showas-item">
+      <div class="strip strip-working"></div>
+      <div class="content">
+        <div class="label">workingElsewhere</div>
+        <div class="code">Pointillés</div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>Valeur</th><th>Rendu</th><th>Utilisation Gr33t</th></tr>
+    <tr>
+      <td><code>free</code></td>
+      <td>Fond léger, pas de bande</td>
+      <td><span class="gr33t-badge score">⚡ Score all-day</span></td>
+    </tr>
+    <tr>
+      <td><code>tentative</code></td>
+      <td>Bande hachurée diagonale</td>
+      <td><span class="gr33t-badge focus">✅ Focus blocks</span></td>
+    </tr>
+    <tr>
+      <td><code>busy</code></td>
+      <td>Bande pleine (couleur du calendrier)</td>
+      <td><span class="unused">— non utilisé</span></td>
+    </tr>
+    <tr>
+      <td><code>oof</code></td>
+      <td>Bande violette/mauve pleine</td>
+      <td><span class="gr33t-badge overtime">🌙 Overtime</span></td>
+    </tr>
+    <tr>
+      <td><code>workingElsewhere</code></td>
+      <td>Bande en pointillés</td>
+      <td><span class="unused">— non utilisé</span></td>
+    </tr>
+  </table>
+
+  <div class="api-snippet">
+    <span class="comment">// Graph API — création d'un événement focus</span><br>
+    {<br>
+    &nbsp;&nbsp;<span class="key">"subject"</span>: <span class="str">"✅ Focus (45min)"</span>,<br>
+    &nbsp;&nbsp;<span class="key">"showAs"</span>: <span class="str">"tentative"</span>,<br>
+    &nbsp;&nbsp;<span class="key">"isReminderOn"</span>: false<br>
+    }
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2>2. <code>categories</code> — Pastilles de couleur</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <p>
+    Chaque événement peut porter une ou plusieurs <strong>catégories</strong> avec un nom et une couleur
+    prédéfinie. Outlook affiche une <strong>pastille colorée</strong> à côté du sujet (surtout en vue Liste
+    et dans le popover). En vue Semaine/Jour, l'effet est plus subtil.
+  </p>
+
+  <h3>25 couleurs prédéfinies</h3>
+  <div class="cat-dots">
+    <div class="cat-dot"><div class="dot" style="background:#e74c3c"></div>Red</div>
+    <div class="cat-dot"><div class="dot" style="background:#e67e22"></div>Orange</div>
+    <div class="cat-dot"><div class="dot" style="background:#795548"></div>Brown</div>
+    <div class="cat-dot"><div class="dot" style="background:#f1c40f"></div>Yellow</div>
+    <div class="cat-dot"><div class="dot" style="background:#27ae60"></div>Green</div>
+    <div class="cat-dot"><div class="dot" style="background:#008080"></div>Teal</div>
+    <div class="cat-dot"><div class="dot" style="background:#808000"></div>Olive</div>
+    <div class="cat-dot"><div class="dot" style="background:#2980b9"></div>Blue</div>
+    <div class="cat-dot"><div class="dot" style="background:#8e44ad"></div>Purple</div>
+    <div class="cat-dot"><div class="dot" style="background:#c0392b"></div>Cranberry</div>
+    <div class="cat-dot"><div class="dot" style="background:#607d8b"></div>Steel</div>
+    <div class="cat-dot"><div class="dot" style="background:#455a64"></div>DarkSteel</div>
+    <div class="cat-dot"><div class="dot" style="background:#95a5a6"></div>Gray</div>
+    <div class="cat-dot"><div class="dot" style="background:#7f8c8d"></div>DarkGray</div>
+    <div class="cat-dot"><div class="dot" style="background:#2c3e50"></div>Black</div>
+  </div>
+
+  <div class="constraint">
+    <strong>Prérequis :</strong> les catégories doivent d'abord être créées sur la boîte aux lettres
+    via <code>POST /me/outlook/masterCategories</code>, sinon elles sont ignorées silencieusement par Graph.
+  </div>
+
+  <div class="api-snippet">
+    <span class="comment">// Créer une catégorie sur la boîte aux lettres</span><br>
+    POST /me/outlook/masterCategories<br>
+    { <span class="key">"displayName"</span>: <span class="str">"Bon score"</span>, <span class="key">"color"</span>: <span class="str">"preset9"</span> }<br><br>
+    <span class="comment">// Assigner à un événement</span><br>
+    { <span class="key">"categories"</span>: [<span class="str">"Bon score"</span>, <span class="str">"Green category"</span>] }
+  </div>
+
+  <p>
+    <strong>Utilisation Gr33t potentielle :</strong> catégoriser les score events par
+    <em>score band</em> (vert = bon, orange = modéré, rouge = faible) pour ajouter
+    un indicateur visuel supplémentaire dans les vues Liste.
+  </p>
+</div>
+
+<!-- =========================================================== -->
+<h2>3. <code>isAllDay</code> — Positionnement</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <p>Contrôle si l'événement apparaît dans le <strong>bandeau all-day</strong> (en haut de chaque colonne)
+    ou dans la <strong>grille horaire</strong> (positionné par start/end).</p>
+
+  <table>
+    <tr><th>Valeur</th><th>Rendu</th><th>Utilisation Gr33t</th></tr>
+    <tr>
+      <td><code>true</code></td>
+      <td>Bandeau horizontal en haut du jour</td>
+      <td><span class="gr33t-badge score">⚡ Score quotidien</span></td>
+    </tr>
+    <tr>
+      <td><code>false</code></td>
+      <td>Bloc dans la grille horaire</td>
+      <td><span class="gr33t-badge focus">✅ Focus</span>
+          <span class="gr33t-badge overtime">🌙 Overtime</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- =========================================================== -->
+<h2>4. <code>importance</code> — Indicateur discret</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <p>Ajoute un petit indicateur visuel (icône) sur l'événement. Effet subtil, surtout visible en vue Liste.</p>
+
+  <table>
+    <tr><th>Valeur</th><th>Rendu</th><th>Usage potentiel</th></tr>
+    <tr><td><code>high</code></td><td>❗ Flèche rouge / point d'exclamation</td><td>Jour en alerte (score &lt; 50%)</td></tr>
+    <tr><td><code>normal</code></td><td>Rien (défaut)</td><td>—</td></tr>
+    <tr><td><code>low</code></td><td>↓ Flèche basse</td><td>—</td></tr>
+  </table>
+
+  <div class="api-snippet">
+    { <span class="key">"importance"</span>: <span class="str">"high"</span> }
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2>5. <code>sensitivity</code> — Marquage de confidentialité</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <p>Contrôle la visibilité des détails pour les autres utilisateurs. Peu utile pour de la différenciation visuelle interne.</p>
+
+  <table>
+    <tr><th>Valeur</th><th>Effet</th></tr>
+    <tr><td><code>normal</code></td><td>Aucun marquage</td></tr>
+    <tr><td><code>personal</code></td><td>Label "Personnel"</td></tr>
+    <tr><td><code>private</code></td><td>🔒 Détails masqués pour les tiers</td></tr>
+    <tr><td><code>confidential</code></td><td>Similaire à private</td></tr>
+  </table>
+</div>
+
+<!-- =========================================================== -->
+<h2>6. <code>subject</code> — Emoji en préfixe</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <p>
+    Le texte du sujet est affiché <strong>directement dans la grille calendrier</strong>.
+    Les emoji rendent bien sur Outlook Web et Desktop — c'est notre principal levier de
+    différenciation visuelle aujourd'hui.
+  </p>
+
+  <div class="emoji-row">
+    <div class="emoji-item"><span class="em">⚡</span> Score quotidien</div>
+    <div class="emoji-item"><span class="em">✅</span> Focus block</div>
+    <div class="emoji-item"><span class="em">🌙</span> Overtime</div>
+  </div>
+
+  <p>Autres emoji utilisables :</p>
+  <div class="emoji-row">
+    <div class="emoji-item"><span class="em">🔴</span> Alerte</div>
+    <div class="emoji-item"><span class="em">🟢</span> OK</div>
+    <div class="emoji-item"><span class="em">🟡</span> Attention</div>
+    <div class="emoji-item"><span class="em">⏳</span> Temps protégé</div>
+    <div class="emoji-item"><span class="em">🧘</span> Concentration</div>
+    <div class="emoji-item"><span class="em">📊</span> Rapport</div>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2>7. <code>body</code> — Contenu HTML (popover uniquement)</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <p>
+    Le corps de l'événement est en HTML et s'affiche dans le <strong>popover</strong>
+    (clic sur l'événement) ou dans la <strong>vue détail</strong>. Aucun impact sur le rendu
+    dans la grille calendrier.
+  </p>
+  <p>
+    Supporte les styles inline, tableaux HTML, couleurs — format "email HTML"
+    (pas de CSS externe, pas de JavaScript). Gr33t l'utilise pour afficher le détail
+    des 4 facteurs dans le popover du score event.
+  </p>
+</div>
+
+<!-- =========================================================== -->
+<h2>8. Couleur du calendrier</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <div class="constraint">
+    <strong>Contrainte majeure :</strong> un calendrier = <strong>une seule couleur</strong> pour
+    tous ses événements. Le calendrier Gr33t Recovery est configuré en <code>lightGreen</code>.
+    Il n'est pas possible d'avoir un événement rouge et un événement bleu dans le même calendrier
+    — seuls <code>showAs</code> et <code>categories</code> permettent de différencier.
+  </div>
+
+  <p>Couleurs de calendrier disponibles :</p>
+  <div class="cat-dots">
+    <div class="cat-dot"><div class="dot" style="background:#a4bdfc"></div>lightBlue</div>
+    <div class="cat-dot"><div class="dot" style="background:#7ae7bf"></div>lightGreen</div>
+    <div class="cat-dot"><div class="dot" style="background:#dbadff"></div>lightPurple</div>
+    <div class="cat-dot"><div class="dot" style="background:#ff887c"></div>lightRed</div>
+    <div class="cat-dot"><div class="dot" style="background:#ffd966"></div>lightYellow</div>
+    <div class="cat-dot"><div class="dot" style="background:#46d6db"></div>lightTeal</div>
+    <div class="cat-dot"><div class="dot" style="background:#e1e1e1"></div>lightGray</div>
+    <div class="cat-dot"><div class="dot" style="background:#000000"></div>auto</div>
+  </div>
+</div>
+
+<!-- =========================================================== -->
+<h2>Synthèse</h2>
+<!-- =========================================================== -->
+<div class="card">
+  <table>
+    <tr>
+      <th>Levier</th>
+      <th>Impact grille</th>
+      <th>Granularité</th>
+      <th>Gr33t</th>
+    </tr>
+    <tr>
+      <td><code>showAs</code></td>
+      <td><span class="impact-high">Fort</span></td>
+      <td>5 variantes</td>
+      <td><span class="used">3/5 utilisées</span></td>
+    </tr>
+    <tr>
+      <td><code>categories</code></td>
+      <td><span class="impact-med">Moyen</span></td>
+      <td>~25 couleurs</td>
+      <td><span class="unused">Non utilisé</span></td>
+    </tr>
+    <tr>
+      <td><code>isAllDay</code></td>
+      <td><span class="impact-high">Fort</span></td>
+      <td>Binaire</td>
+      <td><span class="used">Utilisé</span></td>
+    </tr>
+    <tr>
+      <td><code>importance</code></td>
+      <td><span class="impact-low">Faible</span></td>
+      <td>3 niveaux</td>
+      <td><span class="unused">Non utilisé</span></td>
+    </tr>
+    <tr>
+      <td>Emoji <code>subject</code></td>
+      <td><span class="impact-high">Fort</span></td>
+      <td>Illimité</td>
+      <td><span class="used">Utilisé</span></td>
+    </tr>
+    <tr>
+      <td><code>body</code> HTML</td>
+      <td><span class="impact-low">Nul</span> (popover)</td>
+      <td>Illimité</td>
+      <td><span class="used">Utilisé</span></td>
+    </tr>
+    <tr>
+      <td>Couleur calendrier</td>
+      <td><span class="impact-high">Fort</span></td>
+      <td>1 par calendrier</td>
+      <td><span class="used">lightGreen</span></td>
+    </tr>
+  </table>
+
+  <h3>Leviers inexploités les plus intéressants pour Gr33t</h3>
+  <ul>
+    <li><strong><code>categories</code></strong> — code couleur par score band (vert/orange/rouge) sur les score events</li>
+    <li><strong><code>busy</code></strong> et <strong><code>workingElsewhere</code></strong> — deux variantes visuelles <code>showAs</code> encore disponibles</li>
+    <li><strong><code>importance: high</code></strong> — signaler un jour en alerte (score &lt; 50%)</li>
+  </ul>
+</div>
+
+<div class="footer">
+  Gr33t Recovery Layer — Documentation technique interne — Avril 2026
+</div>
+
+</body>
+</html>

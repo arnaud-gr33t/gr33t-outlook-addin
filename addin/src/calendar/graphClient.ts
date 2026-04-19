@@ -173,7 +173,7 @@ export async function createFocusEvent(
       dateTime: endStr,
       timeZone: TIMEZONE,
     },
-    showAs: "tentative",
+    showAs: "busy",
     isReminderOn: false,
   });
 
