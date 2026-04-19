@@ -11,11 +11,10 @@ const PHRASE =
   "Gr33t vous aide à mieux gérer votre récupération pour gagner en efficacité et en qualité de vie";
 
 export const Topbar: React.FC<TopbarProps> = ({ referenceDate = new Date() }) => {
+  // Le logo G et le titre "Gr33t" sont déjà affichés par le chrome Outlook
+  // (via le `name` du staticTab du manifest Teams), on ne les duplique pas ici.
   return (
     <header className={styles.topbar}>
-      <div className={styles.logo} aria-hidden>
-        G
-      </div>
       <div className={styles.text}>
         <div className={styles.phrase}>{PHRASE}</div>
         <div className={styles.date}>{formatDateLongFR(referenceDate)}</div>
