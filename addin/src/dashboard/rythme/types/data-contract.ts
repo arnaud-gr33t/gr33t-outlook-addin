@@ -42,14 +42,18 @@ export interface WeekData {
 }
 
 export interface WeekScore {
-  /** Valeur entière 0-100 (ou delta signé si `kind==='delta'`). */
+  /** Valeur entière.
+   *   - kind 'value' : 0-100
+   *   - kind 'delta' : entier signé
+   *   - kind 'count' : nombre de réunions planifiées
+   */
   value: number;
   /** Type d'affichage :
    *  - 'value' : score brut coloré (pos/mid selon value)
    *  - 'delta' : affiche le signe (+/-) avec couleur de variation
-   *  - 'projection' : projection de la semaine à venir (couleur primary) */
-  kind: "value" | "delta" | "projection";
-  /** Libellé court sous le chiffre, ex: "IRA", "PROJECTION". */
+   *  - 'count' : nombre entier neutre (ex: "12 réunions planifiées") */
+  kind: "value" | "delta" | "count";
+  /** Libellé court sous le chiffre, ex: "IRA", "vs S-1", "RÉUNIONS". */
   label: string;
 }
 

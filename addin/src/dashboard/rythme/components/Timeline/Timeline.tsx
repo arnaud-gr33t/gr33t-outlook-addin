@@ -26,7 +26,7 @@ interface WeekHeaderProps {
 }
 
 function scoreClass(score: WeekScore): string {
-  if (score.kind === "projection") return styles.projection;
+  if (score.kind === "count") return styles.projection;
   if (score.kind === "delta") {
     return score.value < 0 ? styles.deltaNeg : styles.deltaPos;
   }

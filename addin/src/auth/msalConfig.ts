@@ -10,8 +10,19 @@ import type { Configuration } from "@azure/msal-browser";
 const CLIENT_ID = "db7277cc-f16f-4739-9358-33fc327bcd28";
 const TENANT_ID = "7ea6c456-b138-449f-a20e-1b11403d7a6b";
 
-/** Scopes Graph requis pour lire le calendrier Gr33t Recovery. */
-export const GRAPH_SCOPES = ["Calendars.Read", "User.Read"];
+/**
+ * Scopes Graph :
+ *   - Calendars.Read : lire le calendrier principal + Gr33t Recovery
+ *   - Mail.ReadBasic : détecter les envois de mail (headers only,
+ *                       sans exposer le contenu) pour les facteurs IRA
+ *                       Concentration / Horaires / Focus
+ *   - User.Read      : profil de base
+ */
+export const GRAPH_SCOPES = [
+  "Calendars.Read",
+  "Mail.ReadBasic",
+  "User.Read",
+];
 
 /**
  * Redirect URI dérivé de la page courante :

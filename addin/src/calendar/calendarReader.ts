@@ -306,3 +306,60 @@ export async function fetchFutureMeetings(
   }
   return byDate;
 }
+
+// ============================================================
+// Fetch des envois de mail sur une période (headers uniquement)
+// Utilisé par le scoring IRA pour détecter les envois qui :
+//   - interrompent les plages de concentration
+//   - sortent de la plage horaire usuelle 8h-18h30 (Horaires)
+//   - surviennent pendant une réunion (Focus)
+// ============================================================
+
+/** Un envoi de mail — headers uniquement, jamais le contenu. */
+export interface SentMail {
+  /** Horodatage d'envoi (sentDateTime Graph). */
+  sentAt: Date;
+}
+
+/**
+ * Récupère tous les mails envoyés par l'utilisateur sur [startIso, endIso[.
+ * Scope requis : `Mail.ReadBasic`.
+ *
+ * Utilise le dossier SentItems (well-known) filtré par sentDateTime.
+ *
+ * @param startIso Date ISO "YYYY-MM-DD" (inclusif)
+ * @param endIso   Date ISO "YYYY-MM-DD" (exclusif)
+ */
+export async function fetchSentMails(
+  token: string,
+  startIso: string,
+  endIso: string
+): Promise<SentMail[]> {
+  const filter = `sentDateTime ge ${startIso}T00:00:00Z and sentDateTime lt ${endIso}T00:00:00Z`;
+  const select = "sentDateTime";
+  const path =
+    `/me/mailFolders/SentItems/messages` +
+    `?$filter=${encodeURIComponent(filter)}` +
+    `&$select=${select}` +
+    `&$top=500&$orderby=sentDateTime`;
+
+  interface SentPage {
+    value: Array<{ sentDateTime: string }>;
+    "@odata.nextLink"?: string;
+  }
+
+  const all: SentMail[] = [];
+  // Pagination simple via @odata.nextLink
+  let next: string | null = path;
+  let guard = 0;
+  while (next && guard < 10) {
+    guard++;
+    const resp: SentPage = await graphGet<SentPage>(token, next);
+    for (const m of resp.value) {
+      if (!m.sentDateTime) continue;
+      all.push({ sentAt: new Date(m.sentDateTime) });
+    }
+    next = resp["@odata.nextLink"] ?? null;
+  }
+  return all;
+}

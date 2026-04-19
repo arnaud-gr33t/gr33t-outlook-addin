@@ -12,6 +12,7 @@ export default defineConfig({
       include: [
         "src/dashboard/rythme/utils/**",
         "src/dashboard/rythme/hooks/**",
+        "src/dashboard/rythme/scoring/**",
       ],
       thresholds: {
         lines: 70,

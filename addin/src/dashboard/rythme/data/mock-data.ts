@@ -436,7 +436,7 @@ export const mockData: DashboardData = {
       weekNumber: 17,
       mondayDate: "2026-04-21",
       kind: "future",
-      score: { value: 72, kind: "projection", label: "Projection" },
+      score: { value: 0, kind: "count", label: "Réunions" },
       days: [toDay(lun21), toDay(mar22), toDay(mer23), toDay(jeu24), toDay(ven25)],
     },
   ],
