@@ -49,7 +49,10 @@ async function graphGet<T>(
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`Graph ${res.status} ${res.statusText}: ${text}`);
+    // Inclut le path pour identifier quelle requête a échoué.
+    throw new Error(
+      `Graph ${res.status} ${res.statusText} on ${path.split("?")[0]}: ${text}`
+    );
   }
   return res.json() as Promise<T>;
 }
@@ -58,12 +61,15 @@ async function graphGet<T>(
 let cachedCalendarId: string | null = null;
 async function resolveCalendarId(token: string): Promise<string | null> {
   if (cachedCalendarId) return cachedCalendarId;
+  // On fetch la liste complète plutôt que $filter=name eq '...' : le nom
+  // contient un espace, Graph renvoie régulièrement 500 sur ce filter.
   const data = await graphGet<GraphListResponse<{ id: string; name: string }>>(
     token,
-    `/me/calendars?$filter=name eq '${CALENDAR_NAME}'`
+    `/me/calendars?$select=id,name&$top=50`
   );
-  if (!data.value || data.value.length === 0) return null;
-  cachedCalendarId = data.value[0].id;
+  const match = (data.value ?? []).find((c) => c.name === CALENDAR_NAME);
+  if (!match) return null;
+  cachedCalendarId = match.id;
   return cachedCalendarId;
 }
 
@@ -233,4 +239,70 @@ export async function fetchWeekRecovery(
     });
   }
   return results;
+}
+
+// ============================================================
+// Fetch des réunions futures (calendrier principal)
+// Utilisé par le dashboard Rythme pour afficher les réunions planifiées
+// de la semaine courante et de la semaine suivante, en complément des
+// scores DayRecoveryData (qui ne sont écrits que pour les jours passés).
+// ============================================================
+
+/**
+ * Récupère les réunions de l'utilisateur entre `startIso` (inclusif) et
+ * `endIso` (exclusif), depuis le calendrier principal (pas Gr33t Recovery).
+ * Retourne une Map indexée par date ISO → liste de MeetingInfo.
+ *
+ * Les métadonnées `multitaskOk` / `transitionBeforeOk` ne sont pas calculées
+ * (elles nécessitent des données mail + contexte). On les laisse à `true` par
+ * défaut — pour le rendu timeline du dashboard, l'important est la bonne
+ * position et le flag `future` que l'adapter calcule lui-même.
+ *
+ * @param startIso Date ISO "YYYY-MM-DD" de début (inclusif)
+ * @param endIso Date ISO "YYYY-MM-DD" de fin (exclusif)
+ */
+export async function fetchFutureMeetings(
+  token: string,
+  startIso: string,
+  endIso: string
+): Promise<Map<string, MeetingInfo[]>> {
+  // NB: sur /me/calendarView, startDateTime/endDateTime définissent déjà la
+  // plage — pas besoin de $filter redondant (Graph renvoie 500 si on l'ajoute).
+  // On filtre isAllDay/showAs/isCancelled côté client.
+  const select = "subject,start,end,showAs,isCancelled,isAllDay";
+  const path =
+    `/me/calendarView?startDateTime=${startIso}T00:00:00` +
+    `&endDateTime=${endIso}T00:00:00` +
+    `&$select=${select}` +
+    `&$top=200`;
+
+  const resp = await graphGet<
+    GraphListResponse<GraphEvent & { isCancelled?: boolean }>
+  >(token, path);
+
+  const byDate = new Map<string, MeetingInfo[]>();
+  for (const ev of resp.value) {
+    if (ev.isAllDay) continue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((ev as any).isCancelled) continue;
+    // Filtrage showAs : on ignore "free" (plages persos non-bloquantes)
+    if (ev.showAs === "free") continue;
+
+    const start = new Date(ev.start.dateTime);
+    const end = new Date(ev.end.dateTime);
+    const dateKey = ev.start.dateTime.split("T")[0];
+    const info: MeetingInfo = {
+      subject: ev.subject || "(sans titre)",
+      start,
+      end,
+      // Par défaut optimiste : on ne peut pas calculer ces champs sans
+      // accès aux mails/chats envoyés pendant la réunion.
+      multitaskOk: true,
+      transitionBeforeOk: true,
+    };
+    const list = byDate.get(dateKey) ?? [];
+    list.push(info);
+    byDate.set(dateKey, list);
+  }
+  return byDate;
 }
